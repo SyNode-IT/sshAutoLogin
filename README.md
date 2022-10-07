@@ -1,10 +1,11 @@
 # sshAutoLogin
-[中文](https://github.com/alicfeng/sshAutoLogin/blob/master/README_ZH.md) 
 
 **It can make your ssh login simply as well as efficiently on Mac or LInux.**
 
-On Mac or Linux system, we are frequently using ssh login remote server by terminal. We will find a headache that is 
- often entering a repetitive command line. Fuck~ it’s a waste of time!Maybe you cloud write configure of alias on profile. enenen~  Finally, I determined to write a time-saving shell.Beginning with university stage.
+On a Mac or Linux system, we frequently use a remote ssh login server per terminal.
+This often ends up in a headache from typing repetitive command lines.
+Damn ~ this is a waste of time!
+I improved the shell proposed by alicefeng which saves a lot of time...
 
 ___
 
@@ -18,12 +19,12 @@ ssha Tool Characteristics
 ___
 
 - **Easy to use**
-> help info
 
+> help info
 ~~~shell
 ➜  ~ ssha -h
-usege:
-ssha [-h] [-l] [-s <server alias>]
+USAGE:
+ssha [-h] [-l] [-c] [-s <server alias>]
 ~~~
 
 > see server list
@@ -42,6 +43,16 @@ Index	Description		Port	Host		Username	Password|SecretKeyFile
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │3       vpn.samego.com          68.120.80.86    22      alic    /home/alic/.ssha/key/vpn.samego.com.key │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+~~~
+
+> create a new server
+~~~shell
+➜  ~ ssha -c
+Description		
+Port	
+Host		
+Username	
+Password|SecretKeyFile
 ~~~
 
 > login sameone server
@@ -65,17 +76,17 @@ ___
 - **Simply to install**
 > For Mac System
 ~~~shell
-➜  ~ curl -sSL https://raw.githubusercontent.com/alicfeng/sshAutoLogin/master/iMac.sh | bash
+/bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/iMac.sh)"
 ~~~
 
 > For Debian
 ~~~shell
-➜  ~ curl -sSL https://raw.githubusercontent.com/alicfeng/sshAutoLogin/master/iDebian.sh | bash
+/bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/iDebian.sh)"
 ~~~
 
-> For Redhats
+> For Redhat
 ~~~shell
-➜  ~ curl -sSL https://raw.githubusercontent.com/alicfeng/sshAutoLogin/master/iRedHats.sh | bash
+/bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/iRedHat.sh)"
 ~~~
 
 ___
@@ -103,7 +114,7 @@ PasswordOrKey=password
 ├── 0_localhost.ini
 ├── 1_47.68.88.88.conf
 ├── 2_120.88.68.86.ini
-└── 3_68.120.80.68.ini
+└── 3_68.120.80.68.conf
 
 0 directories, 4 files
 ~~~
@@ -119,7 +130,7 @@ ___
  ██▄▄▄▄▄▄  ██    ██     ██     ▀██▄▄██▀     ███              █▄▄▄▄▄██  █▄▄▄▄▄██  ██    ██  ██▄▄▄███               ██     ▀██▄▄██▀  ▀██▄▄██▀    ██▄▄▄  
  ▀▀▀▀▀▀▀▀  ▀▀    ▀▀     ██       ▀▀▀▀       ██                ▀▀▀▀▀▀    ▀▀▀▀▀▀   ▀▀    ▀▀   ▀▀▀▀ ▀▀               ▀▀       ▀▀▀▀      ▀▀▀▀       ▀▀▀▀  
                      ████▀                ███                                                                                                         
-                                                                                                                                                      
+                                                                                                                                               
 ~~~
 
 

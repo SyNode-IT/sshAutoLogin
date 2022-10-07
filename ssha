@@ -1,11 +1,23 @@
 #!/bin/bash
-# Author   :    AlicFeng
-# Email    :    a@samego.com
-# Github   :    https://github.com/alicfeng/sshAutoLogin
+# Author   :    AlicFeng & GuiGos
+# Email    :    a@samego.com / guillaue@guigos.com
+# Github   :    https://github.com/Gui-Gos/sshAutoLogin
 
+# set color variables for printf or echo
+# example 'printf "${Green}"$VARIABLE" or text${ResetColor}\n"'
+Black="\e[0;30m"
+Red="\e[0;31m"
+Green="\e[0;32m"
+Yellow="\e[0;33m"
+Blue="\e[0;34m"
+Purple="\e[0;35m"
+Cyan="\e[0;36m"
+White="\e[0;37m"
+Grey="\e[0;39m"
+ResetColor="\e[0m"
 
 server_list=()
-SSH_INTELLIGENCE_AUTO_LOGIN_CONFIGURE_DIR=~/.ssha	
+SSH_INTELLIGENCE_AUTO_LOGIN_CONFIGURE_DIR=~/.ssha
 # load include server list configure
 if [ $SSH_INTELLIGENCE_AUTO_LOGIN_CONFIGURE_DIR ]; then
 	# Determine whether the configuration folder exists
@@ -18,14 +30,14 @@ if [ $SSH_INTELLIGENCE_AUTO_LOGIN_CONFIGURE_DIR ]; then
 					done < $config_file
                     server_list[${#server_list[*]}]="${Index} ${Name} ${Host} ${Port} ${User} ${PasswordOrKey}"
 			else
-				echo "file not rule" && exit 1
+				printf "file not rule" && exit 1
 			fi
 		done
 	else
-		echo  "SSH_INTELLIGENCE_AUTO_LOGIN_CONFIGURE_DIR nothing configure files" && exit 1
+		printf  "SSH_INTELLIGENCE_AUTO_LOGIN_CONFIGURE_DIR nothing configure files" && exit 1
 	fi
 else
-	echo -e "Please setting SSH_INTELLIGENCE_AUTO_LOGIN_CONFIGURE_DIR \nmkdir ~/.ssha" && exit 1
+	printf "Please setting SSH_INTELLIGENCE_AUTO_LOGIN_CONFIGURE_DIR \nmkdir ~/.ssha" && exit 1
 fi
 
 # server length
@@ -33,39 +45,41 @@ server_list_length=${#server_list[*]}
 
 # list server
 function list() {
-    echo -e "Index\tDescription\t\tPort\tHost\t\tUsername\tPassword|SecretKeyFile"
+    printf "\n\n${Blue}Index\tDescription\tHost\tPort\tUsername\tPassword|SecretKeyFile${ResetColor}\n"
     for ((i=0;i<${server_list_length};i++));do
         servers=(${server_list[$i]})
         serverIndex=$(($i+1))
-        echo -e "${servers[0]}\t${servers[1]}\t\t${servers[2]}\t${servers[3]}\t${servers[4]}\t${servers[5]}\t"| toilet -f term -F border -t --gay
+        printf "${servers[0]}\t${servers[1]}\t${servers[2]}\t${servers[3]}\t${servers[4]}\t${servers[5]}" | toilet -f term -F border -t
     done
     exit 0
 }
 
 function usage() {
-    echo "usege:"
-    echo "ssha [-h] [-l] [-s <server alias>]"
+printf "\n\n${Red}USAGE:${ResetColor}\n"
+printf "${Blue}ssha${ResetColor} [${Blue}-h${ResetColor}] [${Green}-l${ResetColor}] [${Green}-c${ResetColor}] [${Green}-s <server alias>${ResetColor}]\n"
     exit 0
 }
 
-function login(){
+function login() {
     server=(${server_list[$1]})
-    echo "$USER logging into the【${server[1]}】 server"| toilet -f term -F border --gay
+    v5NZ8jBr2HoQYD=${server[5]}
+    zodVApcRdLi4Kz=$(printf '%s' "$v5NZ8jBr2HoQYD" | base64 --decode)
+    printf "${Blue}$USER${ResetColor} ${Green}logging${ResetColor} into the${Yellow}【${server[1]}】${ResetColor}server" | toilet -f term -F border
 
 	command="
         expect {
-                \"*assword\" {set timeout 6000; send \"${server[5]}\n\"; exp_continue ; sleep 3; }
-                \"*passphrase\" {set timeout 6000; send \"${server[5]}\r\n\"; exp_continue ; sleep 3; }
+                \"*assword\" {set timeout 6000; send \"$zodVApcRdLi4Kz\n\"; exp_continue ; sleep 3; }
+                \"*passphrase\" {set timeout 6000; send \"$zodVApcRdLi4Kz\r\n\"; exp_continue ; sleep 3; }
                 \"yes/no\" {send \"yes\n\"; exp_continue;}
                 \"Last*\" {  send_user \"\nsuccessfully logined 【${server[1]}】\n\";}
         }
        interact
     ";
-   pem=${server[5]}
+   pem=$zodVApcRdLi4Kz
    if [ -f "$pem" ]
    then
 	expect -c "
-		spawn ssh -p ${server[2]} -i ${server[5]} ${server[3]}@${server[2]}
+		spawn ssh -p ${server[2]} -i $zodVApcRdLi4Kz ${server[3]}@${server[2]}
 		${command}
 	"
    else
@@ -74,39 +88,54 @@ function login(){
 		${command}
 	"
    fi
-    echo -e "\t$USER logged out the【${server[1]}】 server\t" | toilet -f term -F border --gay
+    printf "${Blue}$USER${ResetColor} ${Red}logged out${ResetColor} the${Yellow}【${server[1]}】${ResetColor}server" | toilet -f term -F border
 }
-# clear screen
-clear
-while getopts hls: ARGS  
-do  
-case $ARGS in   
-    s)
-        login $OPTARG
+
+function create() {
+printf "\n\n${Blue}Creating a new server:${ResetColor}\n"
+
+number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
+printf "${Yellow}Please type the 'Description' of this server:${ResetColor}\n"
+read name
+printf "${Yellow}Please type the 'Hostname|IP' of this server:${ResetColor}\n"
+read host
+printf "${Yellow}Please type the 'Port' of this server:${ResetColor}\n"
+read port
+printf "${Yellow}Please type the 'Username' of this server:${ResetColor}\n"
+read user
+printf "${Yellow}Please type the 'Password|SecretKeyFile' of this server:${ResetColor}\n"
+read pass
+
+
+echo "Index=$number" >> ~/.ssha/"$number"_"$name".conf
+echo "Name=$name" >> ~/.ssha/"$number"_"$name".conf
+echo "Host=$host" >> ~/.ssha/"$number"_"$name".conf
+echo "Port=$port" >> ~/.ssha/"$number"_"$name".conf
+echo "User=$user" >> ~/.ssha/"$number"_"$name".conf
+v5NZ8jBr2HoQYD=$(printf '%s' "$pass" | base64) && unset pass && echo "PasswordOrKey=$v5NZ8jBr2HoQYD" >> ~/.ssha/"$number"_"$name".conf
+
+exit 0
+}
+
+while getopts hlcs: ARGS
+do
+case $ARGS in
+    h)
+        usage
         ;;
     l)
         list
         ;;
-    h)  
-        usage
-        ;;  
+    c)
+        create
+        ;;
+    s)
+        login $OPTARG
+        ;;
     *)  
         usage
         ;;
 esac
 done
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

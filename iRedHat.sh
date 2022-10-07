@@ -68,14 +68,9 @@ configureDir=~/.ssha
 ######################################################################
 # check dependencies
 function CheckDependencies {
-type brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-sudo chown -R $(whoami) /usr/local/bin
-sudo chmod u+w /usr/local/bin
-brew update --auto-update
-brew upgrade
-type expect >/dev/null 2>&1 || brew install expect
-type toilet >/dev/null 2>&1 || brew install toilet
-type wget >/dev/null 2>&1 || brew install wget
+type expect >/dev/null 2>&1 || yum install expect -y
+type toilet >/dev/null 2>&1 || yum install toilet -y
+type wget >/dev/null 2>&1 || yum install wget -y
 }
 
 ######################################################################
