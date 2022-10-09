@@ -62,15 +62,29 @@ function RootorUser {
 function ConfigDir {
 printf "${Blue}The script is installing the program,Please wating ...${ResetColor}\n"
 configureDir=~/.ssha
-[ -d $configureDir ] && echo "$configureDir exist." || echo "$configureDir does not exist." && sudo mkdir ~/.ssha && printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" >> ~/.ssha/0_localhost.ini
+if [ -d $configureDir ]; then
+echo "$configureDir exist."
+else
+echo "$configureDir does not exist."
+sudo mkdir ~/.ssha
+fi
+localFile=~/.ssha/0_localhost.ini
+if [ -d $localFile ]; then
+echo "$localFile exist."
+sudo rm "$localFile"
+printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" | sudo tee -a ~/.ssha/0_localhost.ini
+else
+echo "$localFile does not exist."
+printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" | sudo tee -a ~/.ssha/0_localhost.ini
+fi
 }
 
 ######################################################################
 # check dependencies
 function CheckDependencies {
-type expect >/dev/null 2>&1 || yum install expect -y
-type toilet >/dev/null 2>&1 || yum install toilet -y
-type wget >/dev/null 2>&1 || yum install wget -y
+type expect >/dev/null 2>&1 || sudo yum install expect -y
+type toilet >/dev/null 2>&1 || sudo yum install toilet -y
+type wget >/dev/null 2>&1 || sudo yum install wget -y
 }
 
 ######################################################################
