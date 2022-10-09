@@ -65,7 +65,6 @@ function login() {
     v5NZ8jBr2HoQYD=${server[5]}
     zodVApcRdLi4Kz=$(printf '%s' "$v5NZ8jBr2HoQYD" | base64 --decode)
     printf "${Blue}$USER${ResetColor} ${Green}logging${ResetColor} into the${Yellow}【${server[1]}】${ResetColor}server" | toilet -f term -F border
-
 	command="
         expect {
                 \"*assword\" {set timeout 6000; send \"$zodVApcRdLi4Kz\n\"; exp_continue ; sleep 3; }
@@ -93,27 +92,23 @@ function login() {
 
 function create() {
 printf "\n\n${Blue}Creating a new server:${ResetColor}\n"
-
 number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
-printf "${Yellow}Please type the 'Description' of this server:${ResetColor}\n"
+printf "${Yellow}Please type the '${Blue}Description${Yellow}' of this server:${ResetColor}\n"
 read name
-printf "${Yellow}Please type the 'Hostname|IP' of this server:${ResetColor}\n"
+printf "${Yellow}Please type the '${Blue}Hostname|IP${Yellow}' of this server:${ResetColor}\n"
 read host
-printf "${Yellow}Please type the 'Port' of this server:${ResetColor}\n"
+printf "${Yellow}Please type the '${Blue}Port${Yellow}' of this server:${ResetColor}\n"
 read port
-printf "${Yellow}Please type the 'Username' of this server:${ResetColor}\n"
+printf "${Yellow}Please type the '${Blue}Username${Yellow}' of this server:${ResetColor}\n"
 read user
-printf "${Yellow}Please type the 'Password|SecretKeyFile' of this server:${ResetColor}\n"
+printf "${Yellow}Please type the '${Blue}Password|SecretKeyFile${Yellow}' of this server:${ResetColor}\n"
 read pass
-
-
-echo "Index=$number" >> ~/.ssha/"$number"_"$name".conf
-echo "Name=$name" >> ~/.ssha/"$number"_"$name".conf
-echo "Host=$host" >> ~/.ssha/"$number"_"$name".conf
-echo "Port=$port" >> ~/.ssha/"$number"_"$name".conf
-echo "User=$user" >> ~/.ssha/"$number"_"$name".conf
-v5NZ8jBr2HoQYD=$(printf '%s' "$pass" | base64) && unset pass && echo "PasswordOrKey=$v5NZ8jBr2HoQYD" >> ~/.ssha/"$number"_"$name".conf
-
+echo "Index=$number" | sudo tee -a ~/.ssha/"$number"_"$name".conf
+echo "Name=$name" | sudo tee -a ~/.ssha/"$number"_"$name".conf
+echo "Host=$host" | sudo tee -a ~/.ssha/"$number"_"$name".conf
+echo "Port=$port" | sudo tee -a ~/.ssha/"$number"_"$name".conf
+echo "User=$user" | sudo tee -a ~/.ssha/"$number"_"$name".conf
+v5NZ8jBr2HoQYD=$(printf '%s' "$pass" | base64) && unset pass && echo "PasswordOrKey=$v5NZ8jBr2HoQYD" | sudo tee -a ~/.ssha/"$number"_"$name".conf
 exit 0
 }
 
