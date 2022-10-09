@@ -94,15 +94,15 @@ function create() {
 printf "\n\n${Blue}Creating a new server:${ResetColor}\n"
 number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
 printf "${Yellow}Please type the '${Blue}Description${Yellow}' of this server:${ResetColor}\n"
-read name
+read -r name
 printf "${Yellow}Please type the '${Blue}Hostname|IP${Yellow}' of this server:${ResetColor}\n"
-read host
+read -r host
 printf "${Yellow}Please type the '${Blue}Port${Yellow}' of this server:${ResetColor}\n"
-read port
+read -r port
 printf "${Yellow}Please type the '${Blue}Username${Yellow}' of this server:${ResetColor}\n"
-read user
+read -r user
 printf "${Yellow}Please type the '${Blue}Password|SecretKeyFile${Yellow}' of this server:${ResetColor}\n"
-read pass
+read -r pass
 echo "Index=$number" | sudo tee -a ~/.ssha/"$number"_"$name".conf
 echo "Name=$name" | sudo tee -a ~/.ssha/"$number"_"$name".conf
 echo "Host=$host" | sudo tee -a ~/.ssha/"$number"_"$name".conf
