@@ -69,7 +69,7 @@ echo "$configureDir does not exist."
 sudo mkdir ~/.ssha
 fi
 localFile=~/.ssha/0_localhost.ini
-if [ -d $localFile ]; then
+if [ -f $localFile ]; then
 echo "$localFile exist."
 sudo rm "$localFile"
 printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" | sudo tee -a ~/.ssha/0_localhost.ini
