@@ -104,6 +104,8 @@ read -r user
 printf "${Yellow}Please type the '${Blue}Password|SecretKeyFile${Yellow}' of this server:${ResetColor}\n"
 read -r pass && v5NZ8jBr2HoQYD=$(printf '%s' "$pass" | base64) && unset pass
 printf "Index=$number\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$v5NZ8jBr2HoQYD" | sudo tee -a ~/.ssha/"$number"_"$name".conf
+printf "${Blue}Congratulations the server${Green} '"$name"' ${Blue}is well registered/n${ResetColor}Here is the current list of your servers:/n$USER${ResetColor}" | toilet -f term -F border
+ssha -l
 exit 0
 }
 
