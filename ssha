@@ -102,13 +102,8 @@ read -r port
 printf "${Yellow}Please type the '${Blue}Username${Yellow}' of this server:${ResetColor}\n"
 read -r user
 printf "${Yellow}Please type the '${Blue}Password|SecretKeyFile${Yellow}' of this server:${ResetColor}\n"
-read -r pass
-echo "Index=$number" | sudo tee -a ~/.ssha/"$number"_"$name".conf
-echo "Name=$name" | sudo tee -a ~/.ssha/"$number"_"$name".conf
-echo "Host=$host" | sudo tee -a ~/.ssha/"$number"_"$name".conf
-echo "Port=$port" | sudo tee -a ~/.ssha/"$number"_"$name".conf
-echo "User=$user" | sudo tee -a ~/.ssha/"$number"_"$name".conf
-v5NZ8jBr2HoQYD=$(printf '%s' "$pass" | base64) && unset pass && echo "PasswordOrKey=$v5NZ8jBr2HoQYD" | sudo tee -a ~/.ssha/"$number"_"$name".conf
+read -r pass && v5NZ8jBr2HoQYD=$(printf '%s' "$pass" | base64) && unset pass
+printf "Index=$number\tName=$name\tHost=$host\tPort=$port\tUser=$user\tPasswordOrKey=$v5NZ8jBr2HoQYD" | sudo tee -a ~/.ssha/"$number"_"$name".conf
 exit 0
 }
 
