@@ -75,7 +75,7 @@ ___
 
 - **Simply to install**
 
-> Universal (MacOS - Debian - Ubuntu - CentOS - Fedora - OpenSuse- RedHat)
+> Universal (MacOS - Debian - Ubuntu - Mint - CentOS - Fedora - OpenSuse- RedHat)
 ~~~shell
 /bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/Universal.sh)"
 ~~~
