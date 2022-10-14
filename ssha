@@ -45,7 +45,7 @@ server_list_length=${#server_list[*]}
 
 # list server
 function list() {
-    printf "\n\n${Blue}Index\tDescription\tHost\tPort\tUsername\tPassword|SecretKeyFile${ResetColor}\n"
+    printf "\n${Blue}Index\tDescription\tHost\tPort\tUsername\tPassword|SecretKeyFile${ResetColor}\n"
     for ((i=0;i<${server_list_length};i++));do
         servers=(${server_list[$i]})
         serverIndex=$(($i+1))
@@ -55,7 +55,7 @@ function list() {
 }
 
 function usage() {
-printf "\n\n${Red}USAGE:${ResetColor}\n"
+printf "\n${Red}USAGE:${ResetColor}\n"
 printf "${Blue}ssha${ResetColor} [${Blue}-h${ResetColor}] [${Green}-l${ResetColor}] [${Green}-c${ResetColor}] [${Green}-s <server alias>${ResetColor}]\n"
     exit 0
 }
@@ -91,7 +91,7 @@ function login() {
 }
 
 function create() {
-printf "\n\n${Blue}Creating a new server:${ResetColor}\n"
+printf "\n${Blue}Creating a new server:${ResetColor}\n"
 number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
 printf "${Yellow}Please type the '${Blue}Description${Yellow}' of this server:${ResetColor}\n"
 read -r name
