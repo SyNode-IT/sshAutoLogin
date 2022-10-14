@@ -43,7 +43,7 @@ printf "██████  ██    ██      ██████  ██    
 ### check sudo or root perms ###
 function RootorUser {
 	Name=$(whoami)
-	printf "${Yellow}Hello '$Name' We will test if you have sudo or root permissions${ResetColor}\n"
+	printf "${Yellow}Hello '${Green}$Name${Yellow}' We will test if you have sudo or root permissions${ResetColor}\n"
 	if [ $Name != "root" ]; then
 			if ! sudo -l; then
 			printf "${Red}'$Name' Is not a sudoers account${ResetColor}\n"
@@ -60,21 +60,21 @@ function RootorUser {
 ######################################################################
 ### create configure dir | default in current user .ssha ###
 function ConfigDir {
-printf "${Blue}The script is installing the program,Please wating ...${ResetColor}\n"
+printf "${Blue}The script is installing the program, please wating...${ResetColor}\n"
 configureDir=~/.ssha
 if [ -d $configureDir ]; then
-echo "$configureDir exist."
+printf "${Green}$configureDir Exist.${ResetColor}\n"
 else
-echo "$configureDir does not exist."
+printf "${Green}$configureDir Does not exist, go to create directory.${ResetColor}\n"
 sudo mkdir ~/.ssha
 fi
 localFile=~/.ssha/0_localhost.ini
 if [ -f $localFile ]; then
-echo "$localFile exist."
+printf "${Green}$localFile Exist.${ResetColor}\n"
 sudo rm "$localFile"
 printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" | sudo tee -a ~/.ssha/0_localhost.ini
 else
-echo "$localFile does not exist."
+printf "${Green}$localFile Does not exist, go to create file.${ResetColor}\n"
 printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" | sudo tee -a ~/.ssha/0_localhost.ini
 fi
 }
@@ -84,8 +84,9 @@ fi
 function InstallBIN {
 Bin="/usr/local/bin/ssha"
 if [ -f $Bin ]; then
-echo "$Bin exist. Go delete old version!" && sudo rm /usr/local/bin/ssha
+printf "${Yellow}$Bin Exist. Go delete old version!${ResetColor}\n" && sudo rm /usr/local/bin/ssha
 fi
+printf "${Green}Installing the SSHA binary.${ResetColor}\n"
 sudo wget -O /usr/local/bin/ssha https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/ssha
 sudo chmod a+x /usr/local/bin/ssha
 toilet -f mono12 -F gay "enjoy ssha" -t
@@ -115,19 +116,22 @@ fi
 if [ $RedHat -gt 0 ] || [ $Fedora -gt 0 ] || [ $OpenSuse -gt 0 ] || [ $CentOS -gt 0 ]; then
 OS="RedHat"
 fi
-printf "\nThis machine works with OS based on ${Green}$OS${ResetColor}\n"
 }
 
 ######################################################################
 ### check dependencies ###
 # for debian
 function CheckDependencies_Debian {
+printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
+printf "${Green}Test of existing binaries (expect,toilet,wget) and installation of this one if they are not installed...${ResetColor}\n"
 type expect >/dev/null 2>&1 || sudo apt-get install expect -y
 type toilet >/dev/null 2>&1 || sudo apt-get install toilet -y
 type wget >/dev/null 2>&1 || sudo apt-get install wget -y
 }
 # for macos
 function CheckDependencies_MacOS {
+printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
+printf "${Green}Test of existing binaries (brew,expect,toilet,wget) and installation of this one if they are not installed...${ResetColor}\n"
 type brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 sudo chown -R $(whoami) /usr/local/bin
 sudo chmod u+w /usr/local/bin
@@ -139,6 +143,8 @@ type wget >/dev/null 2>&1 || brew install wget
 }
 # for redhat
 function CheckDependencies_RedHat {
+printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
+printf "${Green}Test of existing binaries (expect,toilet,wget) and installation of this one if they are not installed...${ResetColor}\n"
 type expect >/dev/null 2>&1 || sudo yum install expect -y
 type toilet >/dev/null 2>&1 || sudo yum install toilet -y
 type wget >/dev/null 2>&1 || sudo yum install wget -y
