@@ -75,26 +75,10 @@ ___
 
 - **Simply to install**
 
-> Universal
+> Universal (MacOS - Debian - Ubuntu - CentOS - Fedora - OpenSuse- RedHat)
 ~~~shell
 /bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/Universal.sh)"
 ~~~
-
-> For Mac System
-~~~shell
-/bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/iMac.sh)"
-~~~
-
-> For Debian
-~~~shell
-/bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/iDebian.sh)"
-~~~
-
-> For Redhat
-~~~shell
-/bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/iRedHat.sh)"
-~~~
-
 ___
 
 - **Scalability configuration**

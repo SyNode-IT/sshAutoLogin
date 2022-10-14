@@ -94,6 +94,7 @@ toilet -f mono12 -F gay "enjoy ssha" -t
 
 ######################################################################
 ### detect os ###
+function DetectOS {
 # Mac OS
 MacOS=$(uname -a | grep -c MacOS)
 Darwin=$(uname -a | grep -c Darwin)
@@ -114,6 +115,8 @@ fi
 if [ $RedHat -gt 0 ] || [ $Fedora -gt 0 ] || [ $OpenSuse -gt 0 ] || [ $CentOS -gt 0 ]; then
 OS="RedHat"
 fi
+printf "\nThis machine works with OS based on ${Green}$OS${ResetColor}\n"
+}
 
 ######################################################################
 ### check dependencies ###
@@ -145,6 +148,7 @@ type wget >/dev/null 2>&1 || sudo yum install wget -y
 # SCRIPT OF INSTALL START HERE #
 BANNER1
 BANNER2
+DetectOS
 RootorUser
 ConfigDir
 CheckDependencies_$OS
