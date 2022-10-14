@@ -74,6 +74,12 @@ successfully logined 【alicfengPC】
 ___
 
 - **Simply to install**
+
+> Universal
+~~~shell
+/bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/Universal.sh)"
+~~~
+
 > For Mac System
 ~~~shell
 /bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/iMac.sh)"
