@@ -61,6 +61,7 @@ function RootorUser {
 ### create configure dir | default in current user .ssha ###
 function ConfigDir {
 printf "${Blue}The script is installing the program, please wating...${ResetColor}\n"
+
 configureDir=~/.ssha
 if [ -d $configureDir ]; then
 printf "${Green}$configureDir Exist.${ResetColor}\n"
@@ -68,6 +69,7 @@ else
 printf "${Green}$configureDir Does not exist, go to create directory.${ResetColor}\n"
 sudo mkdir ~/.ssha
 fi
+
 localFile=~/.ssha/0_localhost.ini
 if [ -f $localFile ]; then
 printf "${Green}$localFile Exist.${ResetColor}\n"
@@ -77,6 +79,10 @@ else
 printf "${Green}$localFile Does not exist, go to create file.${ResetColor}\n"
 printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" | sudo tee -a ~/.ssha/0_localhost.ini
 fi
+
+printf "${Green}Set permissions to $configureDir folder.${ResetColor}\n"
+sudo chmod -R 700 $configureDir
+sudo chown -R $(whoami) $configureDir
 }
 
 ######################################################################
