@@ -64,9 +64,9 @@ printf "${Blue}The script is installing the program, please wating...${ResetColo
 
 configureDir=~/.ssha
 if [ -d $configureDir ]; then
-printf "${Green}$configureDir Exist.${ResetColor}\n"
+printf "${Green}$configureDir Folder exist.${ResetColor}\n"
 else
-printf "${Green}$configureDir Does not exist, go to create directory.${ResetColor}\n"
+printf "${Green}$configureDir Folder does not exist, go to create directory.${ResetColor}\n"
 sudo mkdir ~/.ssha
 fi
 
