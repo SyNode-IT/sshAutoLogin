@@ -74,10 +74,10 @@ localFile=~/.ssha/0_localhost.ini
 if [ -f $localFile ]; then
 printf "${Green}$localFile Exist.${ResetColor}\n"
 sudo rm "$localFile"
-printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" | sudo tee -a ~/.ssha/0_localhost.ini
+printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > ~/.ssha/0_localhost.ini
 else
 printf "${Green}$localFile Does not exist, go to create file.${ResetColor}\n"
-printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" | sudo tee -a ~/.ssha/0_localhost.ini
+printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > ~/.ssha/0_localhost.ini
 fi
 
 printf "${Green}Set permissions to $configureDir folder.${ResetColor}\n"
