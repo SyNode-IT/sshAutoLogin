@@ -1,6 +1,6 @@
 #!/bin/bash
 # Author   :    AlicFeng & GuiGos
-# Email    :    a@samego.com / guillaue@guigos.com
+# Email    :    a@samego.com / guillaume@guigos.com
 # Github   :    https://github.com/Gui-Gos/sshAutoLogin
 
 
