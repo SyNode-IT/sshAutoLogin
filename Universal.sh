@@ -79,9 +79,13 @@ if [ -f $localFile ]; then
 printf "${Green}$localFile Exist.${ResetColor}\n"
 sudo rm "$localFile"
 printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > ~/.ssha/0_localhost.ini
+sudo chmod 700 ~/.ssha/0_localhost.ini
+sudo chown $(whoami) ~/.ssha/0_localhost.ini
 else
 printf "${Green}$localFile Does not exist, go to create file.${ResetColor}\n"
 printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > ~/.ssha/0_localhost.ini
+sudo chmod 700 ~/.ssha/0_localhost.ini
+sudo chown $(whoami) ~/.ssha/0_localhost.ini
 fi
 }
 
