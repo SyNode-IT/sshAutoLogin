@@ -140,10 +140,10 @@ if [[ ! $srvnb -lt $number ]]; then
 printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
 exit 1
 else
-printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}, do you really want to delete this server ? (Y/N)${ResetColor}\n"
+printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you really want to delete this server ? (Y/N)${ResetColor}\n"
     read info
     if [[ "$info" =~ ^[yYoO] ]]; then
-        printf "\n${Green}'OK' ${Blue}Delete server number ${Green}$srvnb${Blue}to the list${ResetColor}\n"
+        printf "\n${Green}'OK' ${Blue}Delete server number ${Green}$srvnb${ResetColor}\n"
         rm ~/.ssha/$srvnb*
         exit 0
     elif [[ "$info" =~ ^[nN] ]]; then
