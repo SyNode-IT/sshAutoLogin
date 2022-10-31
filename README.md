@@ -24,7 +24,7 @@ ___
 ~~~shell
 ➜  ~ ssha -h
 USAGE:
-ssha [-h] [-l] [-c] [-s <server alias>]
+ssha [-h] [-l] [-c] [-d] [-s <server alias>]
 ~~~
 
 > see server list
@@ -53,6 +53,12 @@ Port
 Host		
 Username	
 Password|SecretKeyFile
+~~~
+
+> delete a server
+~~~shell
+➜  ~ ssha -d
+Which server do you want to delete ?
 ~~~
 
 > login sameone server
