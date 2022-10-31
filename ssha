@@ -103,13 +103,59 @@ printf "${Yellow}Please type the '${Blue}Username${Yellow}' of this server:${Res
 read -r user
 printf "${Yellow}Please type the '${Blue}Password|SecretKeyFile${Yellow}' of this server:${ResetColor}\n"
 read -r pass && v5NZ8jBr2HoQYD=$(printf '%s' "$pass" | base64) && unset pass
-printf "Index=$number\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$v5NZ8jBr2HoQYD\n" | tee -a ~/.ssha/"$number"_"$name".conf
-printf "${Blue}Congratulations the server${Green} '"$name"' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:\n" | toilet -f term -F border
-ssha -l
-exit 0
+
+# Print all data for verification #
+printf "\n${Blue}Please check the following informations:${ResetColor}\n"
+printf "${Yellow}Name of server:${Green} $name ${ResetColor}\n"
+printf "${Yellow}Hostname or IP:${Green} $host ${ResetColor}\n"
+printf "${Yellow}Port:${Green} $port ${ResetColor}\n"
+printf "${Yellow}Username:${Green} $user ${ResetColor}\n"
+printf "${Yellow}Password/Key (hidden):${Green} $pass ${ResetColor}\n"
+
+# Informations is correct ?! #
+printf "\n${Blue}Informations is correct ?! (Y/N)${ResetColor}\n"
+read info
+if [[ "$info" =~ ^[yYoO] ]]; then
+	printf "\n${Green}'OK' ${Blue}Added server $name to the list${ResetColor}\n"
+	printf "Index=$number\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$v5NZ8jBr2HoQYD\n" | tee -a ~/.ssha/"$number"_"$name".conf
+    printf "\n${Blue}Congratulations the server${Green} '"$name"' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:\n" | toilet -f term -F border
+    ssha -l
+    exit 0
+elif [[ "$info" =~ ^[nN] ]]; then
+	printf "\n${Green}'OK' ${Blue}Go to restart creation of server${ResetColor}\n"
+	ssha -c
+		else
+            printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
+	        exit 1
+fi
 }
 
-while getopts hlcs: ARGS
+function delete() {
+# see list of servers
+ssha -l
+number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
+printf "\n${Blue}Which server do you want to delete ? ${Yellow}(Enter the number)${ResetColor}\n"
+read -r srvnb
+if [[ ! $srvnb -lt $number ]]; then
+exit 0
+else
+printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}, do you really want to delete this server ? (Y/N)${ResetColor}\n"
+    read info
+    if [[ "$info" =~ ^[yYoO] ]]; then
+        printf "\n${Green}'OK' ${Blue}Delete server number $name to the list${ResetColor}\n"
+        rm ~/.ssha/$srvnb*
+        exit 0
+    elif [[ "$info" =~ ^[nN] ]]; then
+        printf "\n${Green}'OK' ${Blue}Go restart delete server${ResetColor}\n"
+        ssha -d
+            else
+                printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
+                exit 1
+    fi
+fi
+}
+
+while getopts hlcds: ARGS
 do
 case $ARGS in
     h)
@@ -121,6 +167,9 @@ case $ARGS in
     c)
         create
         ;;
+    d)
+        delete
+        ;;
     s)
         login $OPTARG
         ;;
@@ -129,5 +178,4 @@ case $ARGS in
         ;;
 esac
 done
-
 
