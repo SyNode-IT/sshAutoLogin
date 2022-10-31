@@ -137,7 +137,8 @@ number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
 printf "\n${Blue}Which server do you want to delete ? ${Yellow}(Enter the number)${ResetColor}\n"
 read -r srvnb
 if [[ ! $srvnb -lt $number ]]; then
-exit 0
+printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
+exit 1
 else
 printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}, do you really want to delete this server ? (Y/N)${ResetColor}\n"
     read info
