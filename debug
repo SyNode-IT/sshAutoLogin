@@ -52,6 +52,7 @@ if [ -d $DeletedFolder ];then
         servers=(${server_list[$i]})
         rm ~/.ssha/$servers*
         printf "Index=$serversNewIndex\nName=${servers[1]}\nHost=${servers[2]}\nPort=${servers[3]}\nUser=${servers[4]}\nPasswordOrKey=${servers[5]}\n" > ~/.ssha/"$serversNewIndex"_${servers[1]}.ini
+        chmod 700 ~/.ssha/"$serversNewIndex"_${servers[1]}.ini
         serversNewIndex=$((serversNewIndex + 1))
         done
     rmdir $DeletedFolder
@@ -132,6 +133,7 @@ read info
 if [[ "$info" =~ ^[yYoO] ]]; then
 	printf "\n${Green}'OK' ${Blue}Added server $name to the list${ResetColor}\n"
 	printf "Index=$server_list_length\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$v5NZ8jBr2HoQYD\n" | tee -a ~/.ssha/"$server_list_length"_"$name".conf
+    chmod 700 ~/.ssha/"$server_list_length"_"$name".conf
     printf "\n${Blue}Congratulations the server${Green} '"$name"' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:\n" | toilet -f term -F border
     ssha -l
     exit 0
