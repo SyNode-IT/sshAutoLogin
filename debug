@@ -160,7 +160,8 @@ printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you real
     printf "\n${Green}'OK' ${Blue}Delete server number ${Green}$srvnb${ResetColor}\n"
     rm ~/.ssha/$srvnb*
     mkdir $DeletedFolder
-    exit 0
+    # call binary to check deleted folder and re order servers list & exit 0
+    ssha
     elif [[ "$info" =~ ^[nN] ]]; then
         printf "\n${Green}'OK' ${Blue}Go restart delete server${ResetColor}\n"
         ssha -d
@@ -169,8 +170,6 @@ printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you real
                 exit 1
     fi
 fi
-# call binary to check deleted folder and re order servers list
-ssha
 }
 
 function test() {
