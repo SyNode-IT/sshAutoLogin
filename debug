@@ -58,7 +58,9 @@ if [ -d $DeletedFolder ];then
     rmdir $DeletedFolder
 fi
 
-# list server
+##############################
+# FUNCTION # list servers
+##############################
 function list() {
     printf "\n${Blue}Index\tDescription\tHost\tPort\tUsername\tPassword|SecretKeyFile${ResetColor}\n"
     for ((i=0;i<${server_list_length};i++));do
@@ -69,12 +71,18 @@ function list() {
     exit 0
 }
 
+##############################
+# FUNCTION # usage of bin
+##############################
 function usage() {
 printf "\n${Red}USAGE:${ResetColor}\n"
 printf "${Blue}ssha${ResetColor} [${Blue}-h${ResetColor}] [${Green}-l${ResetColor}] [${Green}-c${ResetColor}] [${Green}-d${ResetColor}] [${Green}-s <server alias>${ResetColor}]\n"
     exit 0
 }
 
+##############################
+# FUNCTION # login to server
+##############################
 function login() {
     server=(${server_list[$1]})
     v5NZ8jBr2HoQYD=${server[5]}
@@ -105,6 +113,9 @@ function login() {
     printf "${Blue}$USER${ResetColor} ${Red}logged out${ResetColor} the${Yellow}【${server[1]}】${ResetColor}server" | toilet -f term -F border
 }
 
+##############################
+# FUNCTION # create server
+##############################
 function create() {
 printf "\n${Blue}Creating a new server:${ResetColor}\n"
 #number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
@@ -146,6 +157,9 @@ elif [[ "$info" =~ ^[nN] ]]; then
 fi
 }
 
+##############################
+# FUNCTION # delete server
+##############################
 function delete() {
 # see list of servers
 ssha -l
@@ -174,27 +188,21 @@ printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you real
 fi
 }
 
+##############################
+# FUNCTION # test
+##############################
 function test() {
+echo "#############server_list[@]###############"
 echo ${server_list[@]}
-echo "############################"
+echo "#############server_list[*]################"
 echo ${#server_list[*]}
-echo "############################"
+echo "#############$server_list_length###############"
 echo "$server_list_length"
-#echo ${server_list[1]}
-#printf "%s\n" "${server_list[@]}" > ~/.ssha/file.txt
-
-    incr=0
-    for ((i=0;i<${server_list_length};i++));do
-        servers=(${server_list[$i]})
-        serverIndex=$(($i+1))
-        rm ~/.ssha/$incr*
-        printf "Index=$incr\nName=${servers[1]}\nHost=${servers[2]}\nPort=${servers[3]}\nUser=${servers[4]}\nPasswordOrKey=${servers[5]}" > ~/.ssha/"$incr"_${servers[1]}.ini
-        incr=$((incr + 1))
-    done
-    exit 0
-
 }
 
+##############################
+# SCRIPT # get ARGS
+##############################
 while getopts hlcdts: ARGS
 do
 case $ARGS in
