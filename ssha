@@ -17,33 +17,50 @@ Grey="\e[0;39m"
 ResetColor="\e[0m"
 
 server_list=()
-SSH_INTELLIGENCE_AUTO_LOGIN_CONFIGURE_DIR=~/.ssha
+Config_Dir=~/.ssha
 # load include server list configure
-if [ $SSH_INTELLIGENCE_AUTO_LOGIN_CONFIGURE_DIR ]; then
+if [ $Config_Dir ]; then
 	# Determine whether the configuration folder exists
-	if [ -d $SSH_INTELLIGENCE_AUTO_LOGIN_CONFIGURE_DIR ];then
+	if [ -d $Config_Dir ];then
 		# Traversing each configuration
-		for config_file in $SSH_INTELLIGENCE_AUTO_LOGIN_CONFIGURE_DIR/*;do 
+		for config_file in $Config_Dir/*;do 
 			if [ "${config_file##*.}"x = "ini"x ]||[ "${config_file##*.}"x = "conf"x ];then
     				while read line_configure;do
                         eval $line_configure
 					done < $config_file
                     server_list[${#server_list[*]}]="${Index} ${Name} ${Host} ${Port} ${User} ${PasswordOrKey}"
 			else
-				printf "file not rule" && exit 1
+				printf "your server configuration files are not in the correct format (.ini/.conf)" && exit 1
 			fi
 		done
 	else
-		printf  "SSH_INTELLIGENCE_AUTO_LOGIN_CONFIGURE_DIR nothing configure files" && exit 1
+		printf  "Config_Dir nothing configure files" && exit 1
 	fi
 else
-	printf "Please setting SSH_INTELLIGENCE_AUTO_LOGIN_CONFIGURE_DIR \nmkdir ~/.ssha" && exit 1
+	printf "Please setting Config_Dir \nmkdir ~/.ssha" && exit 1
 fi
 
 # server length
 server_list_length=${#server_list[*]}
 
-# list server
+# deleted servers ?
+DeletedFolder=~/.ssha/.deleted
+if [ -d $DeletedFolder ];then
+    # re order the servers list
+    serversNewIndex=0
+        for ((i=0;i<${server_list_length};i++));do
+        servers=(${server_list[$i]})
+        rm ~/.ssha/$servers*
+        printf "Index=$serversNewIndex\nName=${servers[1]}\nHost=${servers[2]}\nPort=${servers[3]}\nUser=${servers[4]}\nPasswordOrKey=${servers[5]}\n" > ~/.ssha/"$serversNewIndex"_${servers[1]}.ini
+        chmod 700 ~/.ssha/"$serversNewIndex"_${servers[1]}.ini
+        serversNewIndex=$((serversNewIndex + 1))
+        done
+    rmdir $DeletedFolder
+fi
+
+##############################
+# FUNCTION # list servers
+##############################
 function list() {
     printf "\n${Blue}Index\tDescription\tHost\tPort\tUsername\tPassword|SecretKeyFile${ResetColor}\n"
     for ((i=0;i<${server_list_length};i++));do
@@ -54,12 +71,18 @@ function list() {
     exit 0
 }
 
+##############################
+# FUNCTION # usage of bin
+##############################
 function usage() {
 printf "\n${Red}USAGE:${ResetColor}\n"
 printf "${Blue}ssha${ResetColor} [${Blue}-h${ResetColor}] [${Green}-l${ResetColor}] [${Green}-c${ResetColor}] [${Green}-d${ResetColor}] [${Green}-s <server alias>${ResetColor}]\n"
     exit 0
 }
 
+##############################
+# FUNCTION # login to server
+##############################
 function login() {
     server=(${server_list[$1]})
     v5NZ8jBr2HoQYD=${server[5]}
@@ -90,9 +113,12 @@ function login() {
     printf "${Blue}$USER${ResetColor} ${Red}logged out${ResetColor} the${Yellow}【${server[1]}】${ResetColor}server" | toilet -f term -F border
 }
 
+##############################
+# FUNCTION # create server
+##############################
 function create() {
 printf "\n${Blue}Creating a new server:${ResetColor}\n"
-number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
+#number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
 printf "${Yellow}Please type the '${Blue}Description${Yellow}' of this server:${ResetColor}\n"
 read -r name
 printf "${Yellow}Please type the '${Blue}Hostname|IP${Yellow}' of this server:${ResetColor}\n"
@@ -117,7 +143,8 @@ printf "\n${Blue}Informations is correct ?! (Y/N)${ResetColor}\n"
 read info
 if [[ "$info" =~ ^[yYoO] ]]; then
 	printf "\n${Green}'OK' ${Blue}Added server $name to the list${ResetColor}\n"
-	printf "Index=$number\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$v5NZ8jBr2HoQYD\n" | tee -a ~/.ssha/"$number"_"$name".conf
+	printf "Index=$server_list_length\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$v5NZ8jBr2HoQYD\n" | tee -a ~/.ssha/"$server_list_length"_"$name".conf
+    chmod 700 ~/.ssha/"$server_list_length"_"$name".conf
     printf "\n${Blue}Congratulations the server${Green} '"$name"' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:\n" | toilet -f term -F border
     ssha -l
     exit 0
@@ -130,22 +157,27 @@ elif [[ "$info" =~ ^[nN] ]]; then
 fi
 }
 
+##############################
+# FUNCTION # delete server
+##############################
 function delete() {
 # see list of servers
 ssha -l
-number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
+#number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
 printf "\n${Blue}Which server do you want to delete ? ${Yellow}(Enter the number)${ResetColor}\n"
 read -r srvnb
-if [[ ! $srvnb -lt $number ]]; then
+if [[ ! $srvnb -lt $server_list_length ]]; then
 printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
 exit 1
 else
 printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you really want to delete this server ? (Y/N)${ResetColor}\n"
     read info
     if [[ "$info" =~ ^[yYoO] ]]; then
-        printf "\n${Green}'OK' ${Blue}Delete server number ${Green}$srvnb${ResetColor}\n"
-        rm ~/.ssha/$srvnb*
-        exit 0
+    printf "\n${Green}'OK' ${Blue}Delete server number ${Green}$srvnb${ResetColor}\n"
+    rm ~/.ssha/$srvnb*
+    mkdir $DeletedFolder
+    # call binary to check deleted folder and re order servers list & exit 0
+    ssha
     elif [[ "$info" =~ ^[nN] ]]; then
         printf "\n${Green}'OK' ${Blue}Go restart delete server${ResetColor}\n"
         ssha -d
@@ -156,6 +188,9 @@ printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you real
 fi
 }
 
+##############################
+# SCRIPT # get ARGS
+##############################
 while getopts hlcds: ARGS
 do
 case $ARGS in
