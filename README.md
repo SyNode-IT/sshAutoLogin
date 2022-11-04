@@ -70,7 +70,7 @@ Password|SecretKeyFile
 Which server do you want to delete ?
 ~~~
 
-> login sameone server
+> connect to a server
 ~~~
 ➜  ~ ssha -s 0
 ┌────────────────────────────────────────┐
@@ -90,7 +90,7 @@ ___
 
 - **Scalability configuration**
 
-> example server info configure file
+> example of a server configuration file
 ~~~ini
 Index=0
 Name=hostname
