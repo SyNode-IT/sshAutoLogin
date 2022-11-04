@@ -8,7 +8,7 @@ I improved the shell proposed by alicefeng which saves a lot of time...
 
 ___
 
-ssha Tool Characteristics
+> **ssha Tool Characteristics**
 - Scalability configuration
 - Automatic interaction login
 - Support password and SecretKeyFile method
@@ -17,23 +17,23 @@ ssha Tool Characteristics
 
 ___
 
-- **Simply to install**
-> Universal (MacOS - Debian - Ubuntu - Mint - CentOS - Fedora - OpenSuse- RedHat)
+> **Simply to install**
+- Universal (MacOS - Debian - Ubuntu - Mint - CentOS - Fedora - OpenSuse- RedHat)
 ~~~shell
 /bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/Install.sh)"
 ~~~
 
 ___
 
-- **Help info**
-> SYSTEM:~ user$ ssha -h
+> **Help info**
+- SYSTEM:~ user$ ssha -h
 ~~~shell
 USAGE:
 ssha [-h] [-l] [-c] [-d] [-s <server number>]
 ~~~
 
-- **Create a new server**
-> SYSTEM:~ user$ ssha -c
+> **Create a new server**
+- SYSTEM:~ user$ ssha -c
 ~~~shell
 Creating a new server:
 Please type the 'Description' of this server:
@@ -60,8 +60,8 @@ y
 'OK' Added server kali to the list
 ~~~
 
-- **Delete a server**
-> SYSTEM:~ user$ ssha -d
+> **Delete a server**
+- SYSTEM:~ user$ ssha -d
 ~~~shell
 Index	Description	Host	Port	Username	Password|SecretKeyFile
 ┌────────────────────────────────────────────────────────────────┐
@@ -80,8 +80,8 @@ y
 'OK' Server number 3 is deleted
 ~~~
 
-- **See server list**
-> SYSTEM:~ user$ ssha -l
+> **See server list**
+- SYSTEM:~ user$ ssha -l
 ~~~shell
 Index	Description		Host			Port	Username    Password|SecretKeyFile
 ┌────────────────────────────────────────────────────────────────────────────────┐
@@ -98,8 +98,8 @@ Index	Description		Host			Port	Username    Password|SecretKeyFile
 └────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ~~~
 
-- **Connect to a server**
-> SYSTEM:~ user$ ssha -s 2
+> **Connect to a server**
+- SYSTEM:~ user$ ssha -s 2
 ~~~shell
 ┌────────────────────────────────────────┐
 │user logging into the kali server       │
@@ -127,8 +127,8 @@ Connection to 172.160.1.99 closed.
 
 ___
 
-- **Scalability configuration**
-> example of a server configuration file
+> **Scalability configuration**
+- example of a server configuration file
 ~~~ini
 Index=0
 Name=hostname
@@ -138,12 +138,12 @@ User=alic
 PasswordOrKey=password
 ~~~
 
-> default configure dir
+- default configure dir
 ~~~shell
 ~/.ssha/
 ~~~
 
-> configure dir tree
+- configure dir tree
 ~~~shell
 ➜  .ssha tree
 .
@@ -166,5 +166,4 @@ ___
  ██▄▄▄▄▄▄  ██    ██     ██     ▀██▄▄██▀     ███              █▄▄▄▄▄██  █▄▄▄▄▄██  ██    ██  ██▄▄▄███               ██     ▀██▄▄██▀  ▀██▄▄██▀    ██▄▄▄  
  ▀▀▀▀▀▀▀▀  ▀▀    ▀▀     ██       ▀▀▀▀       ██                ▀▀▀▀▀▀    ▀▀▀▀▀▀   ▀▀    ▀▀   ▀▀▀▀ ▀▀               ▀▀       ▀▀▀▀      ▀▀▀▀       ▀▀▀▀  
                      ████▀                ███                                                                                                         
-                                                                                                                                               
 ~~~
