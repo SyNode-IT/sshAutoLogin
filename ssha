@@ -50,7 +50,7 @@ if [ -d $DeletedFolder ];then
     # re order the servers list
     serversNewIndex=0
         for ((i=0;i<"$server_list_length";i++));do
-        servers=("${server_list[$i]}")
+        servers=(${server_list[$i]})
         rm ~/.ssha/"$servers"*
         printf "Index=$serversNewIndex\nName=${servers[1]}\nHost=${servers[2]}\nPort=${servers[3]}\nUser=${servers[4]}\nPasswordOrKey=${servers[5]}\n" > ~/.ssha/"$serversNewIndex"_${servers[1]}.ini
         chmod 700 ~/.ssha/"$serversNewIndex"_${servers[1]}.ini
@@ -65,7 +65,7 @@ fi
 function list() {
     printf "\n${Blue}Index\tDescription\tHost\tPort\tUsername\tPassword|SecretKeyFile${ResetColor}\n"
     for ((i=0;i<"$server_list_length";i++));do
-        servers=("${server_list[$i]}")
+        servers=(${server_list[$i]})
         printf "${servers[0]}\t${servers[1]}\t${servers[2]}\t${servers[3]}\t${servers[4]}\t${servers[5]}" | toilet -f term -F border -t
     done
     exit 0
