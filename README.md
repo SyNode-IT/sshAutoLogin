@@ -18,13 +18,22 @@ ssha Tool Characteristics
 
 ___
 
+- **Simply to install**
+
+> Universal (MacOS - Debian - Ubuntu - Mint - CentOS - Fedora - OpenSuse- RedHat)
+~~~shell
+/bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/Install.sh)"
+~~~
+
+___
+
 - **Easy to use**
 
 > help info
 ~~~shell
 ➜  ~ ssha -h
 USAGE:
-ssha [-h] [-l] [-c] [-d] [-s <server alias>]
+ssha [-h] [-l] [-c] [-d] [-s <server number>]
 ~~~
 
 > see server list
@@ -79,15 +88,8 @@ successfully logined 【alicfengPC】
 
 ___
 
-- **Simply to install**
-
-> Universal (MacOS - Debian - Ubuntu - Mint - CentOS - Fedora - OpenSuse- RedHat)
-~~~shell
-/bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/Universal.sh)"
-~~~
-___
-
 - **Scalability configuration**
+
 > example server info configure file
 ~~~ini
 Index=0
@@ -128,5 +130,3 @@ ___
                      ████▀                ███                                                                                                         
                                                                                                                                                
 ~~~
-
-
