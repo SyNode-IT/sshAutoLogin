@@ -1,56 +1,57 @@
 #!/bin/bash
 # Author   :    AlicFeng & GuiGos
-# Email    :    a@samego.com / guillaue@guigos.com
+# Email    :    a@samego.com / guillaume@guigos.com
 # Github   :    https://github.com/Gui-Gos/sshAutoLogin
 
-# set color variables for printf or echo
-# example 'printf "${Green}"$VARIABLE" or text${ResetColor}\n"'
-Black="\e[0;30m"
+# set color variables for 'printf' or 'echo'; example 'printf "${Green}"$VARIABLE" or text${ResetColor}\n"'
 Red="\e[0;31m"
 Green="\e[0;32m"
 Yellow="\e[0;33m"
 Blue="\e[0;34m"
-Purple="\e[0;35m"
-Cyan="\e[0;36m"
-White="\e[0;37m"
-Grey="\e[0;39m"
 ResetColor="\e[0m"
 
+# loads the list of servers
 server_list=()
+# set the working folder
 Config_Dir=~/.ssha
-# load include server list configure
-if [ $Config_Dir ]; then
-	# Determine whether the configuration folder exists
-	if [ -d $Config_Dir ];then
-		# Traversing each configuration
-		for config_file in $Config_Dir/*;do 
-			if [ "${config_file##*.}"x = "ini"x ]||[ "${config_file##*.}"x = "conf"x ];then
-    				while read line_configure;do
-                        eval $line_configure
-					done < $config_file
-                    server_list[${#server_list[*]}]="${Index} ${Name} ${Host} ${Port} ${User} ${PasswordOrKey}"
-			else
-				printf "your server configuration files are not in the correct format (.ini/.conf)" && exit 1
-			fi
-		done
-	else
-		printf  "Config_Dir nothing configure files" && exit 1
-	fi
+# determines if the configuration folder exists
+if [ -d $Config_Dir ];then
+	# Path of each '.ini or .conf' configuration file
+	for config_file in "$Config_Dir"/*;do 
+		if [ "${config_file##*.}"x = "ini"x ]||[ "${config_file##*.}"x = "conf"x ];then
+    			while read -r line_configure;do
+                    eval "$line_configure"
+				done < "$config_file"
+                server_list[${#server_list[*]}]="${Index} ${Name} ${Host} ${Port} ${User} ${PasswordOrKey}"
+		else
+			printf "${Red}Your server configuration files are not in the correct format (.ini/.conf)${ResetColor}\n" && exit 1
+		fi
+	done
 else
-	printf "Please setting Config_Dir \nmkdir ~/.ssha" && exit 1
+# if the configuration folder does not exists, create folder and config file
+printf  "${Red}Your working folder '$Config_Dir' does not exist${ResetColor}\n"
+printf "${Green}Go to create directory '$Config_Dir' and set permissions${ResetColor}\n"
+mkdir ~/.ssha
+chmod -R 700 $Config_Dir
+chown -R "$(whoami)" $Config_Dir
+printf "${Green}Go to create your first configuration '0_localhost.ini' file${ResetColor}\n"
+printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > ~/.ssha/0_localhost.ini
+chmod 700 ~/.ssha/0_localhost.ini
+chown "$(whoami)" ~/.ssha/0_localhost.ini
+ssha -h
 fi
 
 # server length
 server_list_length=${#server_list[*]}
 
-# deleted servers ?
+# deleted servers
 DeletedFolder=~/.ssha/.deleted
 if [ -d $DeletedFolder ];then
     # re order the servers list
     serversNewIndex=0
-        for ((i=0;i<${server_list_length};i++));do
-        servers=(${server_list[$i]})
-        rm ~/.ssha/$servers*
+        for ((i=0;i<"$server_list_length";i++));do
+        servers=("${server_list[$i]}")
+        rm ~/.ssha/"$servers"*
         printf "Index=$serversNewIndex\nName=${servers[1]}\nHost=${servers[2]}\nPort=${servers[3]}\nUser=${servers[4]}\nPasswordOrKey=${servers[5]}\n" > ~/.ssha/"$serversNewIndex"_${servers[1]}.ini
         chmod 700 ~/.ssha/"$serversNewIndex"_${servers[1]}.ini
         serversNewIndex=$((serversNewIndex + 1))
@@ -63,9 +64,8 @@ fi
 ##############################
 function list() {
     printf "\n${Blue}Index\tDescription\tHost\tPort\tUsername\tPassword|SecretKeyFile${ResetColor}\n"
-    for ((i=0;i<${server_list_length};i++));do
-        servers=(${server_list[$i]})
-        serverIndex=$(($i+1))
+    for ((i=0;i<"$server_list_length";i++));do
+        servers=("${server_list[$i]}")
         printf "${servers[0]}\t${servers[1]}\t${servers[2]}\t${servers[3]}\t${servers[4]}\t${servers[5]}" | toilet -f term -F border -t
     done
     exit 0
@@ -76,7 +76,7 @@ function list() {
 ##############################
 function usage() {
 printf "\n${Red}USAGE:${ResetColor}\n"
-printf "${Blue}ssha${ResetColor} [${Blue}-h${ResetColor}] [${Green}-l${ResetColor}] [${Green}-c${ResetColor}] [${Green}-d${ResetColor}] [${Green}-s <server alias>${ResetColor}]\n"
+printf "${Blue}ssha${ResetColor} [${Blue}-h${ResetColor}] [${Green}-l${ResetColor}] [${Green}-c${ResetColor}] [${Green}-d${ResetColor}] [${Green}-s <server number>${ResetColor}]\n"
     exit 0
 }
 
@@ -87,21 +87,21 @@ function login() {
     server=(${server_list[$1]})
     v5NZ8jBr2HoQYD=${server[5]}
     zodVApcRdLi4Kz=$(printf '%s' "$v5NZ8jBr2HoQYD" | base64 --decode)
+    pem="$zodVApcRdLi4Kz"
     printf "${Blue}$USER${ResetColor} ${Green}logging${ResetColor} into the${Yellow}【${server[1]}】${ResetColor}server" | toilet -f term -F border
 	command="
         expect {
-                \"*assword\" {set timeout 6000; send \"$zodVApcRdLi4Kz\n\"; exp_continue ; sleep 3; }
-                \"*passphrase\" {set timeout 6000; send \"$zodVApcRdLi4Kz\r\n\"; exp_continue ; sleep 3; }
+                \"*assword\" {set timeout 6000; send \"$pem\n\"; exp_continue ; sleep 3; }
+                \"*passphrase\" {set timeout 6000; send \"$pem\r\n\"; exp_continue ; sleep 3; }
                 \"yes/no\" {send \"yes\n\"; exp_continue;}
                 \"Last*\" {  send_user \"\nsuccessfully logined 【${server[1]}】\n\";}
         }
        interact
     ";
-   pem=$zodVApcRdLi4Kz
    if [ -f "$pem" ]
    then
 	expect -c "
-		spawn ssh -p ${server[2]} -i $zodVApcRdLi4Kz ${server[3]}@${server[2]}
+		spawn ssh -p ${server[2]} -i $pem ${server[3]}@${server[2]}
 		${command}
 	"
    else
@@ -140,12 +140,12 @@ printf "${Yellow}Password/Key (hidden):${Green} $pass ${ResetColor}\n"
 
 # Informations is correct ?! #
 printf "\n${Blue}Informations is correct ?! (Y/N)${ResetColor}\n"
-read info
+read -r info
 if [[ "$info" =~ ^[yYoO] ]]; then
 	printf "\n${Green}'OK' ${Blue}Added server $name to the list${ResetColor}\n"
 	printf "Index=$server_list_length\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$v5NZ8jBr2HoQYD\n" | tee -a ~/.ssha/"$server_list_length"_"$name".conf
     chmod 700 ~/.ssha/"$server_list_length"_"$name".conf
-    printf "\n${Blue}Congratulations the server${Green} '"$name"' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:\n" | toilet -f term -F border
+    printf "\n${Blue}Congratulations the server${Green} '$name' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:\n" | toilet -f term -F border
     ssha -l
     exit 0
 elif [[ "$info" =~ ^[nN] ]]; then
@@ -171,10 +171,10 @@ printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
 exit 1
 else
 printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you really want to delete this server ? (Y/N)${ResetColor}\n"
-    read info
+    read -r info
     if [[ "$info" =~ ^[yYoO] ]]; then
     printf "\n${Green}'OK' ${Blue}Delete server number ${Green}$srvnb${ResetColor}\n"
-    rm ~/.ssha/$srvnb*
+    rm ~/.ssha/"$srvnb"*
     mkdir $DeletedFolder
     # call binary to check deleted folder and re order servers list & exit 0
     ssha
@@ -207,11 +207,10 @@ case $ARGS in
         delete
         ;;
     s)
-        login $OPTARG
+        login "$OPTARG"
         ;;
     *)  
         usage
         ;;
 esac
 done
-
