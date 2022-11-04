@@ -3,21 +3,14 @@
 # Email    :    a@samego.com / guillaume@guigos.com
 # Github   :    https://github.com/Gui-Gos/sshAutoLogin
 
-
 ######################################################################
 ### clear screen ###
 clear
-### set color variables for printf or echo ###
-# example 'printf "${Green}"$VARIABLE" or text${ResetColor}\n"'
-Black="\e[0;30m"
+### set color variables for 'printf' or 'echo' ### example 'printf "${Green}"$VARIABLE" or text${ResetColor}\n"'
 Red="\e[0;31m"
 Green="\e[0;32m"
 Yellow="\e[0;33m"
 Blue="\e[0;34m"
-Purple="\e[0;35m"
-Cyan="\e[0;36m"
-White="\e[0;37m"
-Grey="\e[0;39m"
 ResetColor="\e[0m"
 
 ######################################################################
@@ -44,10 +37,10 @@ printf "${Blue}██████  ██    ██      ██████  █
 function RootorUser {
 	Name=$(whoami)
 	printf "${Yellow}Hello '${Green}$Name${Yellow}' We will test if you have sudo or root permissions${ResetColor}\n"
-	if [ $Name != "root" ]; then
+	if [ "$Name" != "root" ]; then
 			if ! sudo -l; then
 			printf "${Red}'$Name' Is not a sudoers account${ResetColor}\n"
-			printf "${Red}Please logged in on a root or admin account and restart the script "$0" ${ResetColor}\n"
+			printf "${Red}Please logged in on a root or admin account and restart the script '$0'${ResetColor}\n"
 			exit 1
 			    else
 				printf "${Green}'$Name' Is a sudoers account${ResetColor}\n"
@@ -62,17 +55,17 @@ function RootorUser {
 function ConfigDir {
 printf "${Blue}The script is installing the program, please wating...${ResetColor}\n"
 
-configureDir=~/.ssha
-if [ -d $configureDir ]; then
-printf "${Green}$configureDir Folder exist.${ResetColor}\n"
+Config_Dir=~/.ssha
+if [ -d $Config_Dir ]; then
+printf "${Green}$Config_Dir Folder exist.${ResetColor}\n"
 else
-printf "${Green}$configureDir Folder does not exist, go to create directory.${ResetColor}\n"
+printf "${Green}$Config_Dir Folder does not exist, go to create directory.${ResetColor}\n"
 sudo mkdir ~/.ssha
 fi
 
-printf "${Green}Set permissions to $configureDir folder.${ResetColor}\n"
-sudo chmod -R 700 $configureDir
-sudo chown -R $(whoami) $configureDir
+printf "${Green}Set permissions to $Config_Dir folder.${ResetColor}\n"
+sudo chmod -R 700 $Config_Dir
+sudo chown -R "$(whoami)" $Config_Dir
 
 localFile=~/.ssha/0_localhost.ini
 if [ -f $localFile ]; then
@@ -80,12 +73,12 @@ printf "${Green}$localFile Exist.${ResetColor}\n"
 sudo rm "$localFile"
 printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > ~/.ssha/0_localhost.ini
 sudo chmod 700 ~/.ssha/0_localhost.ini
-sudo chown $(whoami) ~/.ssha/0_localhost.ini
+sudo chown "$(whoami)" ~/.ssha/0_localhost.ini
 else
 printf "${Green}$localFile Does not exist, go to create file.${ResetColor}\n"
 printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > ~/.ssha/0_localhost.ini
 sudo chmod 700 ~/.ssha/0_localhost.ini
-sudo chown $(whoami) ~/.ssha/0_localhost.ini
+sudo chown "$(whoami)" ~/.ssha/0_localhost.ini
 fi
 }
 
@@ -148,7 +141,7 @@ function CheckDependencies_MacOS {
 printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
 printf "${Green}Test of existing binaries (brew,expect,toilet,wget) and installation of this one if they are not installed...${ResetColor}\n"
 type brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-sudo chown -R $(whoami) /usr/local/bin
+sudo chown -R "$(whoami)" /usr/local/bin
 sudo chmod u+w /usr/local/bin
 brew update --auto-update
 brew upgrade
