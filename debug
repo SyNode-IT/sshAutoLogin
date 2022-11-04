@@ -173,7 +173,7 @@ else
 printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you really want to delete this server ? (Y/N)${ResetColor}\n"
     read -r info
     if [[ "$info" =~ ^[yYoO] ]]; then
-    printf "\n${Green}'OK' ${Blue}Delete server number ${Green}$srvnb${ResetColor}\n"
+    printf "\n${Green}'OK' ${Blue}Server number ${Green}$srvnb ${Blue}is deleted${ResetColor}\n"
     rm ~/.ssha/$srvnb*
     mkdir $DeletedFolder
     # call binary to check deleted folder and re order servers list & exit 0
