@@ -17,11 +17,11 @@ Config_Dir=~/.ssha
 # determines if the configuration folder exists
 if [ -d $Config_Dir ];then
 	# Path of each '.ini or .conf' configuration file
-	for config_file in $Config_Dir/*;do 
+	for config_file in "$Config_Dir"/*;do 
 		if [ "${config_file##*.}"x = "ini"x ]||[ "${config_file##*.}"x = "conf"x ];then
-    			while read line_configure;do
-                    eval $line_configure
-				done < $config_file
+    			while read -r line_configure;do
+                    eval "$line_configure"
+				done < "$config_file"
                 server_list[${#server_list[*]}]="${Index} ${Name} ${Host} ${Port} ${User} ${PasswordOrKey}"
 		else
 			printf "${Red}Your server configuration files are not in the correct format (.ini/.conf)${ResetColor}\n" && exit 1
@@ -49,9 +49,9 @@ DeletedFolder=~/.ssha/.deleted
 if [ -d $DeletedFolder ];then
     # re order the servers list
     serversNewIndex=0
-        for ((i=0;i<${server_list_length};i++));do
-        servers=(${server_list[$i]})
-        rm ~/.ssha/$servers*
+        for ((i=0;i<"$server_list_length";i++));do
+        servers=("${server_list[$i]}")
+        rm ~/.ssha/"$servers"*
         printf "Index=$serversNewIndex\nName=${servers[1]}\nHost=${servers[2]}\nPort=${servers[3]}\nUser=${servers[4]}\nPasswordOrKey=${servers[5]}\n" > ~/.ssha/"$serversNewIndex"_${servers[1]}.ini
         chmod 700 ~/.ssha/"$serversNewIndex"_${servers[1]}.ini
         serversNewIndex=$((serversNewIndex + 1))
@@ -64,9 +64,8 @@ fi
 ##############################
 function list() {
     printf "\n${Blue}Index\tDescription\tHost\tPort\tUsername\tPassword|SecretKeyFile${ResetColor}\n"
-    for ((i=0;i<${server_list_length};i++));do
-        servers=(${server_list[$i]})
-        serverIndex=$(($i+1))
+    for ((i=0;i<"$server_list_length";i++));do
+        servers=("${server_list[$i]}")
         printf "${servers[0]}\t${servers[1]}\t${servers[2]}\t${servers[3]}\t${servers[4]}\t${servers[5]}" | toilet -f term -F border -t
     done
     exit 0
@@ -85,7 +84,7 @@ printf "${Blue}ssha${ResetColor} [${Blue}-h${ResetColor}] [${Green}-l${ResetColo
 # FUNCTION # login to server
 ##############################
 function login() {
-    server=(${server_list[$1]})
+    server=("${server_list[$1]}")
     v5NZ8jBr2HoQYD=${server[5]}
     zodVApcRdLi4Kz=$(printf '%s' "$v5NZ8jBr2HoQYD" | base64 --decode)
     printf "${Blue}$USER${ResetColor} ${Green}logging${ResetColor} into the${Yellow}【${server[1]}】${ResetColor}server" | toilet -f term -F border
@@ -141,12 +140,12 @@ printf "${Yellow}Password/Key (hidden):${Green} $pass ${ResetColor}\n"
 
 # Informations is correct ?! #
 printf "\n${Blue}Informations is correct ?! (Y/N)${ResetColor}\n"
-read info
+read -r info
 if [[ "$info" =~ ^[yYoO] ]]; then
 	printf "\n${Green}'OK' ${Blue}Added server $name to the list${ResetColor}\n"
 	printf "Index=$server_list_length\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$v5NZ8jBr2HoQYD\n" | tee -a ~/.ssha/"$server_list_length"_"$name".conf
     chmod 700 ~/.ssha/"$server_list_length"_"$name".conf
-    printf "\n${Blue}Congratulations the server${Green} '"$name"' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:\n" | toilet -f term -F border
+    printf "\n${Blue}Congratulations the server${Green} '$name' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:\n" | toilet -f term -F border
     ssha -l
     exit 0
 elif [[ "$info" =~ ^[nN] ]]; then
@@ -172,10 +171,10 @@ printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
 exit 1
 else
 printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you really want to delete this server ? (Y/N)${ResetColor}\n"
-    read info
+    read -r info
     if [[ "$info" =~ ^[yYoO] ]]; then
     printf "\n${Green}'OK' ${Blue}Delete server number ${Green}$srvnb${ResetColor}\n"
-    rm ~/.ssha/$srvnb*
+    rm ~/.ssha/"$srvnb"*
     mkdir $DeletedFolder
     # call binary to check deleted folder and re order servers list & exit 0
     ssha
@@ -223,11 +222,10 @@ case $ARGS in
         test
         ;;
     s)
-        login $OPTARG
+        login "$OPTARG"
         ;;
     *)  
         usage
         ;;
 esac
 done
-
