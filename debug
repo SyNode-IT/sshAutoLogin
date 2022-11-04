@@ -1,49 +1,50 @@
 #!/bin/bash
 # Author   :    AlicFeng & GuiGos
-# Email    :    a@samego.com / guillaue@guigos.com
+# Email    :    a@samego.com / guillaume@guigos.com
 # Github   :    https://github.com/Gui-Gos/sshAutoLogin
 
-# set color variables for printf or echo
-# example 'printf "${Green}"$VARIABLE" or text${ResetColor}\n"'
-Black="\e[0;30m"
+# set color variables for 'printf' or 'echo'; example 'printf "${Green}"$VARIABLE" or text${ResetColor}\n"'
 Red="\e[0;31m"
 Green="\e[0;32m"
 Yellow="\e[0;33m"
 Blue="\e[0;34m"
-Purple="\e[0;35m"
-Cyan="\e[0;36m"
-White="\e[0;37m"
-Grey="\e[0;39m"
 ResetColor="\e[0m"
 
+# loads the list of servers
 server_list=()
+# set the working folder
 Config_Dir=~/.ssha
-# load include server list configure
-if [ $Config_Dir ]; then
-	# Determine whether the configuration folder exists
-	if [ -d $Config_Dir ];then
-		# Traversing each configuration
-		for config_file in $Config_Dir/*;do 
-			if [ "${config_file##*.}"x = "ini"x ]||[ "${config_file##*.}"x = "conf"x ];then
-    				while read line_configure;do
-                        eval $line_configure
-					done < $config_file
-                    server_list[${#server_list[*]}]="${Index} ${Name} ${Host} ${Port} ${User} ${PasswordOrKey}"
-			else
-				printf "your server configuration files are not in the correct format (.ini/.conf)" && exit 1
-			fi
-		done
-	else
-		printf  "Config_Dir nothing configure files" && exit 1
-	fi
+# determines if the configuration folder exists
+if [ -d $Config_Dir ];then
+	# Path of each '.ini or .conf' configuration file
+	for config_file in $Config_Dir/*;do 
+		if [ "${config_file##*.}"x = "ini"x ]||[ "${config_file##*.}"x = "conf"x ];then
+    			while read line_configure;do
+                    eval $line_configure
+				done < $config_file
+                server_list[${#server_list[*]}]="${Index} ${Name} ${Host} ${Port} ${User} ${PasswordOrKey}"
+		else
+			printf "${Red}Your server configuration files are not in the correct format (.ini/.conf)${ResetColor}\n" && exit 1
+		fi
+	done
 else
-	printf "Please setting Config_Dir \nmkdir ~/.ssha" && exit 1
+# if the configuration folder does not exists, create folder and config file
+printf  "${Red}Your working folder '$Config_Dir' does not exist${ResetColor}\n"
+printf "${Green}Go to create directory '$Config_Dir' and set permissions${ResetColor}\n"
+mkdir ~/.ssha
+chmod -R 700 $Config_Dir
+chown -R "$(whoami)" $Config_Dir
+printf "${Green}Go to create your first configuration '0_localhost.ini' file${ResetColor}\n"
+printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > ~/.ssha/0_localhost.ini
+chmod 700 ~/.ssha/0_localhost.ini
+chown "$(whoami)" ~/.ssha/0_localhost.ini
+ssha -h
 fi
 
 # server length
 server_list_length=${#server_list[*]}
 
-# deleted servers ?
+# deleted servers
 DeletedFolder=~/.ssha/.deleted
 if [ -d $DeletedFolder ];then
     # re order the servers list
@@ -193,9 +194,9 @@ fi
 ##############################
 function test() {
 echo "#############server_list[@]###############"
-echo ${server_list[@]}
+echo "${server_list[@]}"
 echo "#############server_list[*]################"
-echo ${#server_list[*]}
+echo "${#server_list[*]}"
 echo "#############$server_list_length###############"
 echo "$server_list_length"
 }
