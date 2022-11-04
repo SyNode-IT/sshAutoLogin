@@ -101,7 +101,7 @@ function login() {
    if [ -f "$pem" ]
    then
 	expect -c "
-		spawn ssh -p ${server[2]} -i "$pem" ${server[3]}@${server[2]}
+		spawn ssh -p ${server[2]} -i $pem ${server[3]}@${server[2]}
 		${command}
 	"
    else
