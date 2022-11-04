@@ -1,7 +1,6 @@
 # sshAutoLogin
 
 **It can make your ssh login simply as well as efficiently on Mac or LInux.**
-
 On a Mac or Linux system, we frequently use a remote ssh login server per terminal.
 This often ends up in a headache from typing repetitive command lines.
 Damn ~ this is a waste of time!
@@ -19,7 +18,6 @@ ssha Tool Characteristics
 ___
 
 - **Simply to install**
-
 > Universal (MacOS - Debian - Ubuntu - Mint - CentOS - Fedora - OpenSuse- RedHat)
 ~~~shell
 /bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/Install.sh)"
@@ -28,7 +26,6 @@ ___
 ___
 
 - **Help info**
-
 > SYSTEM:~ user$ ssha -h
 ~~~shell
 USAGE:
@@ -36,7 +33,6 @@ ssha [-h] [-l] [-c] [-d] [-s <server number>]
 ~~~
 
 - **Create a new server**
-
 > SYSTEM:~ user$ ssha -c
 ~~~shell
 Creating a new server:
@@ -65,7 +61,6 @@ y
 ~~~
 
 - **Delete a server**
-
 > SYSTEM:~ user$ ssha -d
 ~~~shell
 Index	Description	Host	Port	Username	Password|SecretKeyFile
@@ -86,7 +81,6 @@ y
 ~~~
 
 - **See server list**
-
 > SYSTEM:~ user$ ssha -l
 ~~~shell
 Index	Description		Host			Port	Username    Password|SecretKeyFile
@@ -105,7 +99,6 @@ Index	Description		Host			Port	Username    Password|SecretKeyFile
 ~~~
 
 - **Connect to a server**
-
 > SYSTEM:~ user$ ssha -s 2
 ~~~shell
 ┌────────────────────────────────────────┐
@@ -135,7 +128,6 @@ Connection to 172.160.1.99 closed.
 ___
 
 - **Scalability configuration**
-
 > example of a server configuration file
 ~~~ini
 Index=0
