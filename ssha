@@ -51,7 +51,7 @@ if [ -d $DeletedFolder ];then
     serversNewIndex=0
         for ((i=0;i<"$server_list_length";i++));do
         servers=(${server_list[$i]})
-        rm ~/.ssha/"$servers"*
+        rm ~/.ssha/$servers*
         printf "Index=$serversNewIndex\nName=${servers[1]}\nHost=${servers[2]}\nPort=${servers[3]}\nUser=${servers[4]}\nPasswordOrKey=${servers[5]}\n" > ~/.ssha/"$serversNewIndex"_${servers[1]}.ini
         chmod 700 ~/.ssha/"$serversNewIndex"_${servers[1]}.ini
         serversNewIndex=$((serversNewIndex + 1))
@@ -174,7 +174,7 @@ printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you real
     read -r info
     if [[ "$info" =~ ^[yYoO] ]]; then
     printf "\n${Green}'OK' ${Blue}Delete server number ${Green}$srvnb${ResetColor}\n"
-    rm ~/.ssha/"$srvnb"*
+    rm ~/.ssha/$srvnb*
     mkdir $DeletedFolder
     # call binary to check deleted folder and re order servers list & exit 0
     ssha
