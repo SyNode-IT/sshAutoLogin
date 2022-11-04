@@ -84,24 +84,24 @@ printf "${Blue}ssha${ResetColor} [${Blue}-h${ResetColor}] [${Green}-l${ResetColo
 # FUNCTION # login to server
 ##############################
 function login() {
-    server=("${server_list[$1]}")
+    server=(${server_list[$1]})
     v5NZ8jBr2HoQYD=${server[5]}
     zodVApcRdLi4Kz=$(printf '%s' "$v5NZ8jBr2HoQYD" | base64 --decode)
+    pem="$zodVApcRdLi4Kz"
     printf "${Blue}$USER${ResetColor} ${Green}logging${ResetColor} into the${Yellow}【${server[1]}】${ResetColor}server" | toilet -f term -F border
 	command="
         expect {
-                \"*assword\" {set timeout 6000; send \"$zodVApcRdLi4Kz\n\"; exp_continue ; sleep 3; }
-                \"*passphrase\" {set timeout 6000; send \"$zodVApcRdLi4Kz\r\n\"; exp_continue ; sleep 3; }
+                \"*assword\" {set timeout 6000; send \"$pem\n\"; exp_continue ; sleep 3; }
+                \"*passphrase\" {set timeout 6000; send \"$pem\r\n\"; exp_continue ; sleep 3; }
                 \"yes/no\" {send \"yes\n\"; exp_continue;}
                 \"Last*\" {  send_user \"\nsuccessfully logined 【${server[1]}】\n\";}
         }
        interact
     ";
-   pem=$zodVApcRdLi4Kz
    if [ -f "$pem" ]
    then
 	expect -c "
-		spawn ssh -p ${server[2]} -i $zodVApcRdLi4Kz ${server[3]}@${server[2]}
+		spawn ssh -p ${server[2]} -i "$pem" ${server[3]}@${server[2]}
 		${command}
 	"
    else
