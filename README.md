@@ -1,6 +1,6 @@
 # sshAutoLogin
 
-**It can make your ssh login simply as well as efficiently on Mac or LInux.**
+**It can make your ssh login simply as well as efficiently on Mac or Linux.**
 On a Mac or Linux system, we frequently use a remote ssh login server per terminal.
 This often ends up in a headache from typing repetitive command lines.
 Damn ~ this is a waste of time!
