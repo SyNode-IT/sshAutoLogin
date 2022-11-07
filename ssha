@@ -141,7 +141,6 @@ if [[ "$info" =~ ^[yYoO] ]]; then
     Close=1; Fit=4; bcount "Congratulations the server '$name' is well registered. Here is the current list of your servers:"
     banner "${Blue}Congratulations the server${Green} '$name' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:"
     ssha -l
-    exit 0
 elif [[ "$info" =~ ^[nN] ]]; then
 	printf "\n${Green}'OK' ${Blue}Go to restart creation of server${ResetColor}\n"
 	ssha -c
@@ -166,9 +165,9 @@ else
 printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you really want to delete this server ? (Y/N)${ResetColor}\n"
     read -r info
     if [[ "$info" =~ ^[yYoO] ]]; then
-    Close=1; Fit=4; bcount "'OK' Server number $srvnb is deleted" && banner "${Green}'OK' ${Blue}Server number ${Green}$srvnb ${Blue}is deleted${ResetColor}"
     rm ~/.ssha/$srvnb*
     mkdir $DeletedFolder
+    Close=1; Fit=4; bcount "'OK' Server number $srvnb is deleted." && banner "${Green}'OK' ${Blue}Server number ${Green}$srvnb ${Blue}is deleted.${ResetColor}"
     # call binary to check deleted folder and re order servers list & exit 0
     ssha
     elif [[ "$info" =~ ^[nN] ]]; then
