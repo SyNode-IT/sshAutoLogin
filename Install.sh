@@ -33,6 +33,31 @@ printf "${Blue}██████  ██    ██      ██████  █
 }
 
 ######################################################################
+### detect os ###
+function DetectOS {
+# Mac OS
+MacOS=$(uname -a | grep -c MacOS)
+Darwin=$(uname -a | grep -c Darwin)
+# Debian
+Debian=$(uname -a | grep -c Debian)
+Ubuntu=$(uname -a | grep -c Ubuntu)
+# Redhat
+CentOS=$(uname -a | grep -c CentOS)
+Fedora=$(uname -a | grep -c Fedora)
+OpenSuse=$(uname -a | grep -c OpenSuse)
+RedHat=$(uname -a | grep -c RedHat)
+if [ $MacOS -gt 0 ] || [ $Darwin -gt 0 ]; then
+OS="MacOS"
+fi
+if [ $Debian -gt 0 ] || [ $Ubuntu -gt 0 ]; then
+OS="Debian"
+fi
+if [ $RedHat -gt 0 ] || [ $Fedora -gt 0 ] || [ $OpenSuse -gt 0 ] || [ $CentOS -gt 0 ]; then
+OS="RedHat"
+fi
+}
+
+######################################################################
 ### check sudo or root perms ###
 function RootorUser {
 	Name=$(whoami)
@@ -83,6 +108,38 @@ fi
 }
 
 ######################################################################
+### check dependencies ###
+# for debian
+function CheckDependencies_Debian {
+printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
+printf "${Green}Test of existing binaries (expect,toilet,wget) and installation of this one if they are not installed...${ResetColor}\n"
+type expect >/dev/null 2>&1 || sudo apt-get install expect -y
+#type toilet >/dev/null 2>&1 || sudo apt-get install toilet -y
+type wget >/dev/null 2>&1 || sudo apt-get install wget -y
+}
+# for macos
+function CheckDependencies_MacOS {
+printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
+printf "${Green}Test of existing binaries (brew,expect,toilet,wget) and installation of this one if they are not installed...${ResetColor}\n"
+type brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+sudo chown -R "$(whoami)" /usr/local/bin
+sudo chmod u+w /usr/local/bin
+brew update --auto-update
+brew upgrade
+type expect >/dev/null 2>&1 || brew install expect
+#type toilet >/dev/null 2>&1 || brew install toilet
+type wget >/dev/null 2>&1 || brew install wget
+}
+# for redhat
+function CheckDependencies_RedHat {
+printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
+printf "${Green}Test of existing binaries (expect,toilet,wget) and installation of this one if they are not installed...${ResetColor}\n"
+type expect >/dev/null 2>&1 || sudo yum install expect -y
+#type toilet >/dev/null 2>&1 || sudo yum install toilet -y
+type wget >/dev/null 2>&1 || sudo yum install wget -y
+}
+
+######################################################################
 ### install bin & run ###
 function InstallBIN {
 Bin="/usr/local/bin/ssha"
@@ -99,63 +156,6 @@ printf "${Green}███████╗███╗   ██╗     ██╗ �
 ███████╗██║ ╚████║╚█████╔╝╚██████╔╝   ██║       ███████║███████║██║  ██║██║  ██║
 ╚══════╝╚═╝  ╚═══╝ ╚════╝  ╚═════╝    ╚═╝       ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝${ResetColor}\n"
 /usr/local/bin/ssha -h
-}
-
-######################################################################
-### detect os ###
-function DetectOS {
-# Mac OS
-MacOS=$(uname -a | grep -c MacOS)
-Darwin=$(uname -a | grep -c Darwin)
-# Debian
-Debian=$(uname -a | grep -c Debian)
-Ubuntu=$(uname -a | grep -c Ubuntu)
-# Redhat
-CentOS=$(uname -a | grep -c CentOS)
-Fedora=$(uname -a | grep -c Fedora)
-OpenSuse=$(uname -a | grep -c OpenSuse)
-RedHat=$(uname -a | grep -c RedHat)
-if [ $MacOS -gt 0 ] || [ $Darwin -gt 0 ]; then
-OS="MacOS"
-fi
-if [ $Debian -gt 0 ] || [ $Ubuntu -gt 0 ]; then
-OS="Debian"
-fi
-if [ $RedHat -gt 0 ] || [ $Fedora -gt 0 ] || [ $OpenSuse -gt 0 ] || [ $CentOS -gt 0 ]; then
-OS="RedHat"
-fi
-}
-
-######################################################################
-### check dependencies ###
-# for debian
-function CheckDependencies_Debian {
-printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
-printf "${Green}Test of existing binaries (expect,toilet,wget) and installation of this one if they are not installed...${ResetColor}\n"
-type expect >/dev/null 2>&1 || sudo apt-get install expect -y
-type toilet >/dev/null 2>&1 || sudo apt-get install toilet -y
-type wget >/dev/null 2>&1 || sudo apt-get install wget -y
-}
-# for macos
-function CheckDependencies_MacOS {
-printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
-printf "${Green}Test of existing binaries (brew,expect,toilet,wget) and installation of this one if they are not installed...${ResetColor}\n"
-type brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-sudo chown -R "$(whoami)" /usr/local/bin
-sudo chmod u+w /usr/local/bin
-brew update --auto-update
-brew upgrade
-type expect >/dev/null 2>&1 || brew install expect
-type toilet >/dev/null 2>&1 || brew install toilet
-type wget >/dev/null 2>&1 || brew install wget
-}
-# for redhat
-function CheckDependencies_RedHat {
-printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
-printf "${Green}Test of existing binaries (expect,toilet,wget) and installation of this one if they are not installed...${ResetColor}\n"
-type expect >/dev/null 2>&1 || sudo yum install expect -y
-type toilet >/dev/null 2>&1 || sudo yum install toilet -y
-type wget >/dev/null 2>&1 || sudo yum install wget -y
 }
 
 ######################################################################

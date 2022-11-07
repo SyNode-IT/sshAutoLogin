@@ -57,7 +57,7 @@ Password/Key (hidden):
 Informations is correct ?! (Y/N)
 y
 
-'OK' Added server kali to the list
+Congratulations the server 'kali' is well registered.
 ~~~
 
 > **Delete a server**
@@ -106,7 +106,7 @@ Index	Description		Host			Port	Username    Password|SecretKeyFile
 └────────────────────────────────────────┘
 spawn ssh -p 22 user@172.160.1.99
 user@172.160.1.99's password: 
-Linux surv 5.10.0-19-amd64 #1 SMP Debian 5.10.149-2 (2022-10-21) x86_64
+Linux Kali 5.10.0-19-amd64 #1 SMP Debian 5.10.149-2 (2022-10-21) x86_64
 
 The programs included with the Debian GNU/Linux system are free software;
 the exact distribution terms for each program are described in the
