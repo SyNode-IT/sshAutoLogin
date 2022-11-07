@@ -120,7 +120,7 @@ type wget >/dev/null 2>&1 || sudo apt-get install wget -y
 # for macos
 function CheckDependencies_MacOS {
 printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
-printf "${Green}Test of existing binaries (brew,expect,toilet,wget) and installation of this one if they are not installed...${ResetColor}\n"
+printf "${Green}Test of existing binaries (brew,expect,wget) and installation of this one if they are not installed...${ResetColor}\n"
 type brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 sudo chown -R "$(whoami)" /usr/local/bin
 sudo chmod u+w /usr/local/bin
