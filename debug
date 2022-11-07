@@ -194,7 +194,7 @@ ssha -l
 #number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
 printf "\n${Blue}Which server do you want to delete ? ${Yellow}(Enter the number)${ResetColor}\n"
 read -r srvnb
-if [[ ! $srvnb -lt $server_list_length ]]; then
+if [[ ! "$srvnb" < "$server_list_length" ]]; then
 printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
 exit 1
 else
@@ -209,9 +209,9 @@ printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you real
     elif [[ "$info" =~ ^[nN] ]]; then
         printf "\n${Green}'OK' ${Blue}Go restart delete server${ResetColor}\n"
         ssha -d
-            else
-                printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
-                exit 1
+        else
+        printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
+        exit 1
     fi
 fi
 }
