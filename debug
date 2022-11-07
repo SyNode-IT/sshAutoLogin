@@ -60,13 +60,41 @@ if [ -d $DeletedFolder ];then
 fi
 
 ##############################
+# FUNCTION # bcount
+##############################
+bcount()
+{
+	Caract="$@"
+	NbCaract=${#Caract}
+	NbCaract=$((NbCaract +$Fit))
+}
+
+##############################
+# FUNCTION # banner
+##############################
+banner()
+{
+    if [[ $Close == 1 ]];then
+    # close middle line
+	printf "\n+" && printf %$NbCaract\s | tr " " "-" && printf "+\n|  "
+	printf "$@"
+	printf "  |\n+" && printf %$NbCaract\s | tr " " "-" && printf "+\n"
+    else
+    # not close middle line
+	printf "\n+" && printf %$NbCaract\s | tr " " "-" && printf "+\n|  "
+	printf "$@"
+	printf "\n+" && printf %$NbCaract\s | tr " " "-" && printf "+\n"
+    fi
+}
+
+##############################
 # FUNCTION # list servers
 ##############################
 function list() {
-    printf "\n${Blue}Index\tDescription\tHost\tPort\tUsername\tPassword|SecretKeyFile${ResetColor}\n"
+    Close=1; Fit=20; bcount "Index\tDescription\tHost\tPort\tUsername\tPass|SecretKFile" && banner "${Red}Index\t${Green}Description\t${Blue}Host\tPort\tUsername\tPass|SecKFile${ResetColor}"
     for ((i=0;i<"$server_list_length";i++));do
         servers=(${server_list[$i]})
-        printf "${servers[0]}\t${servers[1]}\t${servers[2]}\t${servers[3]}\t${servers[4]}\t${servers[5]}" | toilet -f term -F border -t
+        Close=0; banner "${Red}${servers[0]}${ResetColor}\t${Green}${servers[1]}${ResetColor}\t${servers[2]}\t${servers[3]}\t${servers[4]}\t${servers[5]}"
     done
     exit 0
 }
@@ -88,7 +116,7 @@ function login() {
     v5NZ8jBr2HoQYD=${server[5]}
     zodVApcRdLi4Kz=$(printf '%s' "$v5NZ8jBr2HoQYD" | base64 --decode)
     pem="$zodVApcRdLi4Kz"
-    printf "${Blue}$USER${ResetColor} ${Green}logging${ResetColor} into the${Yellow}【${server[1]}】${ResetColor}server" | toilet -f term -F border
+    Close=1; Fit=6; bcount "$USER logging into the【${server[1]}】server" && banner "${Blue}$USER${ResetColor} ${Green}logging${ResetColor} into the${Yellow}【${server[1]}】${ResetColor}server"
 	command="
         expect {
                 \"*assword\" {set timeout 6000; send \"$pem\n\"; exp_continue ; sleep 3; }
@@ -110,7 +138,7 @@ function login() {
 		${command}
 	"
    fi
-    printf "${Blue}$USER${ResetColor} ${Red}logged out${ResetColor} the${Yellow}【${server[1]}】${ResetColor}server" | toilet -f term -F border
+    Close=1; Fit=6; bcount "$USER logged out the【${server[1]}】server" && banner "${Blue}$USER${ResetColor} ${Red}logged out${ResetColor} the${Yellow}【${server[1]}】${ResetColor}server"
 }
 
 ##############################
@@ -142,10 +170,10 @@ printf "${Yellow}Password/Key (hidden):${Green} $pass ${ResetColor}\n"
 printf "\n${Blue}Informations is correct ?! (Y/N)${ResetColor}\n"
 read -r info
 if [[ "$info" =~ ^[yYoO] ]]; then
-	printf "\n${Green}'OK' ${Blue}Added server $name to the list${ResetColor}\n"
-	printf "Index=$server_list_length\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$v5NZ8jBr2HoQYD\n" | tee -a ~/.ssha/"$server_list_length"_"$name".conf
+	printf "Index=$server_list_length\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$v5NZ8jBr2HoQYD\n" > ~/.ssha/"$server_list_length"_"$name".conf
     chmod 700 ~/.ssha/"$server_list_length"_"$name".conf
-    printf "\n${Blue}Congratulations the server${Green} '$name' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:\n" | toilet -f term -F border
+    Close=1; Fit=4; bcount "Congratulations the server '$name' is well registered. Here is the current list of your servers:"
+    banner "${Blue}Congratulations the server${Green} '$name' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:"
     ssha -l
     exit 0
 elif [[ "$info" =~ ^[nN] ]]; then
@@ -173,7 +201,7 @@ else
 printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you really want to delete this server ? (Y/N)${ResetColor}\n"
     read -r info
     if [[ "$info" =~ ^[yYoO] ]]; then
-    printf "\n${Green}'OK' ${Blue}Server number ${Green}$srvnb ${Blue}is deleted${ResetColor}\n"
+    Close=1; Fit=4; bcount "'OK' Server number $srvnb is deleted" && banner "${Green}'OK' ${Blue}Server number ${Green}$srvnb ${Blue}is deleted${ResetColor}"
     rm ~/.ssha/$srvnb*
     mkdir $DeletedFolder
     # call binary to check deleted folder and re order servers list & exit 0
