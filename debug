@@ -76,12 +76,12 @@ banner()
 {
     if [[ $Close == 1 ]];then
     # close middle line
-	printf "\n+" && printf %$NbCaract\s | tr " " "-" && printf "+\n|  "
+	printf "+" && printf %$NbCaract\s | tr " " "-" && printf "+\n|  "
 	printf "$@"
 	printf "  |\n+" && printf %$NbCaract\s | tr " " "-" && printf "+\n"
     else
     # not close middle line
-	printf "\n+" && printf %$NbCaract\s | tr " " "-" && printf "+\n|  "
+	printf "+" && printf %$NbCaract\s | tr " " "-" && printf "+\n|  "
 	printf "$@"
 	printf "\n+" && printf %$NbCaract\s | tr " " "-" && printf "+\n"
     fi
