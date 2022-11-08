@@ -156,7 +156,7 @@ read -r port
 printf "${Yellow}Please type the '${Blue}Username${Yellow}' of this server:${ResetColor}\n"
 read -r user
 printf "${Yellow}Please type the '${Blue}Password|SecretKeyFile${Yellow}' of this server:${ResetColor}\n"
-read -r pass && GPass $name $pass && unset pass && POK=$(printf '%s' "$name" | base64)
+read -r pass && GPass "$name" "$pass" && unset pass && POK=$(printf '%s' "$name" | base64)
 
 # Print all data for verification #
 printf "\n${Blue}Please check the following informations:${ResetColor}\n"
