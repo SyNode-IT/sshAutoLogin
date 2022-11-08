@@ -237,6 +237,8 @@ function GPass() {
 	echo "HKbWCRvUMXB=${ENCRYPTED}"											>> $Config_Pass/."$Base_MachineE"
 	echo "AFZKKgzyimHDfTeUowyYGeJZYdgpYZmRFukppSU=${SALT}"					>> $Config_Pass/."$Base_MachineE"
 	echo "aNHTuBTFTQEPVpdtbcYtwSHkEsQNCvf=${KEY}"							>> $Config_Pass/."$Base_MachineE"
+    chmod 700 $Config_Pass/."$Base_MachineE"
+	chown "$(whoami)" $Config_Pass/."$Base_MachineE"
 }
 
 ##############################
