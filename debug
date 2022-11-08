@@ -114,7 +114,7 @@ printf "${Blue}ssha${ResetColor} [${Blue}-h${ResetColor}] [${Green}-l${ResetColo
 function login() {
     server=(${server_list[$1]})
     v5NZ8jBr2HoQYD=${server[5]}
-    zodVApcRdLi4Kz=$(printf '%s' "$v5NZ8jBr2HoQYD" | base64 --decode)
+    zodVApcRdLi4Kz=$(DPass "$v5NZ8jBr2HoQYD")
     pem="$zodVApcRdLi4Kz"
     Close=1; Fit=6; bcount "$USER logging into the【${server[1]}】server" && banner "${Blue}$USER${ResetColor} ${Green}logging${ResetColor} into the${Yellow}【${server[1]}】${ResetColor}server"
 	command="
@@ -156,7 +156,7 @@ read -r port
 printf "${Yellow}Please type the '${Blue}Username${Yellow}' of this server:${ResetColor}\n"
 read -r user
 printf "${Yellow}Please type the '${Blue}Password|SecretKeyFile${Yellow}' of this server:${ResetColor}\n"
-read -r pass && v5NZ8jBr2HoQYD=$(printf '%s' "$pass" | base64) && unset pass
+read -r pass && GPass $name $pass && unset pass && POK=$(printf '%s' "$name" | base64)
 
 # Print all data for verification #
 printf "\n${Blue}Please check the following informations:${ResetColor}\n"
@@ -170,7 +170,7 @@ printf "${Yellow}Password/Key (hidden):${Green} $pass ${ResetColor}\n"
 printf "\n${Blue}Informations is correct ?! (Y/N)${ResetColor}\n"
 read -r info
 if [[ "$info" =~ ^[yYoO] ]]; then
-	printf "Index=$server_list_length\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$v5NZ8jBr2HoQYD\n" > ~/.ssha/"$server_list_length"_"$name".conf
+	printf "Index=$server_list_length\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$POK\n" > ~/.ssha/"$server_list_length"_"$name".conf
     chmod 700 ~/.ssha/"$server_list_length"_"$name".conf
     Close=1; Fit=4; bcount "Congratulations the server '$name' is well registered. Here is the current list of your servers:"
     banner "${Blue}Congratulations the server${Green} '$name' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:"
@@ -214,6 +214,59 @@ printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you real
         exit 1
     fi
 fi
+}
+
+##############################
+# FUNCTION # GPass
+##############################
+function GPass() {
+	# Usage ~$ GPass "MACHINE_NAME" "PASS"
+	Config_Pass=~/.ssha/.data
+	if [ ! -d $Config_Pass ];then
+		mkdir $Config_Pass
+		chmod 700 $Config_Pass
+		chown "$(whoami)" $Config_Pass
+	else
+		echo "$Config_Pass Exist" > /dev/null
+	fi
+	local MACHINE_NAME="${1}"
+	local PASS="${2}"
+	local SALT=$(openssl rand -hex 8)
+	local KEY=$(openssl rand -hex 12)
+	local ENCRYPTED=$(echo "${PASS}" | openssl enc -aes256 -md md5 -a -A -S "${SALT}" -k "${KEY}")
+	local Base_MachineE=$(printf '%s' "$MACHINE_NAME" | base64)
+	echo "hjxmDskUozjTivCVcjTUspxAZVgrSyfYTmnXGLNBfWbijsR=${Base_MachineE}"	> $Config_Pass/."$Base_MachineE"
+	echo "HKbWCRvUMXB=${ENCRYPTED}"											>> $Config_Pass/."$Base_MachineE"
+	echo "AFZKKgzyimHDfTeUowyYGeJZYdgpYZmRFukppSU=${SALT}"					>> $Config_Pass/."$Base_MachineE"
+	echo "aNHTuBTFTQEPVpdtbcYtwSHkEsQNCvf=${KEY}"							>> $Config_Pass/."$Base_MachineE"
+}
+
+##############################
+# FUNCTION # DPass
+##############################
+function DPass() {
+	# Usage: ~$ DPass "MACHINE_NAME"
+	local MACHINE_NAME="${1}"
+	# loads the list of servers pass
+	server_pass=()
+	# set the working folder
+	Config_Pass=~/.ssha/.data
+	# determines if the configuration folder exists
+	if [ -d $Config_Pass ];then
+				while read -r line;do
+					eval "$line"
+				done < "$Config_Pass"/."$MACHINE_NAME"
+				server_pass[${#server_pass[*]}]="${hjxmDskUozjTivCVcjTUspxAZVgrSyfYTmnXGLNBfWbijsR} ${HKbWCRvUMXB} ${AFZKKgzyimHDfTeUowyYGeJZYdgpYZmRFukppSU} ${aNHTuBTFTQEPVpdtbcYtwSHkEsQNCvf}"
+	else
+		exit 1
+	fi
+	# server pass length
+	server_pass_length=${#server_pass[*]}
+	for ((i=0;i<"$server_pass_length";i++));do
+		local SK=(${server_pass[$i]})
+		local Pass=${SK[1]}; local Salt=${SK[2]}; local Key=${SK[3]}
+		echo "${Pass}" | /usr/bin/openssl enc -aes256 -md md5 -d -a -A -S "$Salt" -k "$Key"
+	done
 }
 
 ##############################
