@@ -146,7 +146,6 @@ function login() {
 ##############################
 function create() {
 printf "\n${Blue}Creating a new server:${ResetColor}\n"
-#number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
 printf "${Yellow}Please type the '${Blue}Description${Yellow}' of this server:${ResetColor}\n"
 read -r name
 printf "${Yellow}Please type the '${Blue}Hostname|IP${Yellow}' of this server:${ResetColor}\n"
@@ -191,7 +190,6 @@ fi
 function delete() {
 # see list of servers
 ssha -l
-#number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
 printf "\n${Blue}Which server do you want to delete ? ${Yellow}(Enter the number)${ResetColor}\n"
 read -r srvnb
 if [[ ! "$srvnb" < "$server_list_length" ]]; then
@@ -239,6 +237,8 @@ function GPass() {
 	echo "HKbWCRvUMXB=${ENCRYPTED}"											>> $Config_Pass/."$Base_MachineE"
 	echo "AFZKKgzyimHDfTeUowyYGeJZYdgpYZmRFukppSU=${SALT}"					>> $Config_Pass/."$Base_MachineE"
 	echo "aNHTuBTFTQEPVpdtbcYtwSHkEsQNCvf=${KEY}"							>> $Config_Pass/."$Base_MachineE"
+    chmod 700 $Config_Pass/."$Base_MachineE"
+	chown "$(whoami)" $Config_Pass/."$Base_MachineE"
 }
 
 ##############################
@@ -279,6 +279,7 @@ echo "#############server_list[*]################"
 echo "${#server_list[*]}"
 echo "#############$server_list_length###############"
 echo "$server_list_length"
+#number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
 }
 
 ##############################
