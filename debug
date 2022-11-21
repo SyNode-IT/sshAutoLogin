@@ -234,7 +234,7 @@ function GPass() {
 	local ENCRYPTED=$(echo "${PASS}" | /usr/bin/openssl aes-256-ctr -md sha512 -a -A -S "${SALT}" -k "${KEY}" 2>/dev/null)
 	local Base_MachineE=$(printf '%s' "$MACHINE_NAME" | base64)
 	echo "hjxmDskUozjTivCVcjTUspxAZVgrSyfYTmnXGLNBfWbijsR=${Base_MachineE}"	> $Config_Pass/."$Base_MachineE"
-	echo "HKbWCRvUMXB=${ENCRYPTED}"											>> $Config_Pass/."$Base_MachineE"
+	echo "HKbWCRvUMXBDZehRnXbvwZQwSrnbZakcFhJ=${ENCRYPTED}"											>> $Config_Pass/."$Base_MachineE"
 	echo "AFZKKgzyimHDfTeUowyYGeJZYdgpYZmRFukppSU=${SALT}"					>> $Config_Pass/."$Base_MachineE"
 	echo "aNHTuBTFTQEPVpdtbcYtwSHkEsQNCvf=${KEY}"							>> $Config_Pass/."$Base_MachineE"
     chmod 700 $Config_Pass/."$Base_MachineE"
@@ -256,7 +256,7 @@ function DPass() {
 				while read -r line;do
 					eval "$line"
 				done < "$Config_Pass"/."$MACHINE_NAME"
-				server_pass[${#server_pass[*]}]="${hjxmDskUozjTivCVcjTUspxAZVgrSyfYTmnXGLNBfWbijsR} ${HKbWCRvUMXB} ${AFZKKgzyimHDfTeUowyYGeJZYdgpYZmRFukppSU} ${aNHTuBTFTQEPVpdtbcYtwSHkEsQNCvf}"
+				server_pass[${#server_pass[*]}]="${hjxmDskUozjTivCVcjTUspxAZVgrSyfYTmnXGLNBfWbijsR} ${HKbWCRvUMXBDZehRnXbvwZQwSrnbZakcFhJ} ${AFZKKgzyimHDfTeUowyYGeJZYdgpYZmRFukppSU} ${aNHTuBTFTQEPVpdtbcYtwSHkEsQNCvf}"
 	else
 		exit 1
 	fi
