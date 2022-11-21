@@ -231,7 +231,7 @@ function GPass() {
 	local PASS="${2}"
 	local SALT=$(openssl rand -hex 8)
 	local KEY=$(openssl rand -hex 12)
-	local ENCRYPTED=$(echo "${PASS}" | openssl enc -aes256 -md md5 -a -A -S "${SALT}" -k "${KEY}")
+	local ENCRYPTED=$(echo "${PASS}" | /usr/bin/openssl aes-256-ctr -md sha512 -a -A -S "${SALT}" -k "${KEY}" 2>/dev/null)
 	local Base_MachineE=$(printf '%s' "$MACHINE_NAME" | base64)
 	echo "hjxmDskUozjTivCVcjTUspxAZVgrSyfYTmnXGLNBfWbijsR=${Base_MachineE}"	> $Config_Pass/."$Base_MachineE"
 	echo "HKbWCRvUMXB=${ENCRYPTED}"											>> $Config_Pass/."$Base_MachineE"
@@ -265,7 +265,7 @@ function DPass() {
 	for ((i=0;i<"$server_pass_length";i++));do
 		local SK=(${server_pass[$i]})
 		local Pass=${SK[1]}; local Salt=${SK[2]}; local Key=${SK[3]}
-		echo "${Pass}" | /usr/bin/openssl enc -aes256 -md md5 -d -a -A -S "$Salt" -k "$Key"
+		echo "${Pass}" | /usr/bin/openssl aes-256-ctr -md sha512 -d -a -A -S "$Salt" -k "$Key" 2>/dev/null
 	done
 }
 
