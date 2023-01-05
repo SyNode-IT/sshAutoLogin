@@ -1,7 +1,7 @@
 #!/bin/bash
 # Author   :    AlicFeng & GuiGos
 # Email    :    a@samego.com / guillaume@guigos.com
-# Github   :    https://github.com/Gui-Gos/sshAutoLogin
+# Github   :    https://github.com/o-GuGus/sshAutoLogin
 
 ######################################################################
 ### clear screen ###
@@ -161,7 +161,7 @@ if [ -f $Bin ]; then
 printf "${Yellow}$Bin Exist. Go delete old version!${ResetColor}\n" && sudo rm /usr/local/bin/ssha
 fi
 printf "${Green}Installing the SSHA binary.${ResetColor}\n"
-sudo wget -O /usr/local/bin/ssha https://raw.githubusercontent.com/Gui-Gos/sshAutoLogin/master/ssha
+sudo wget -O /usr/local/bin/ssha https://raw.githubusercontent.com/o-GuGus/sshAutoLogin/master/ssha
 sudo chmod a+x /usr/local/bin/ssha
 printf "${Green}███████╗███╗   ██╗     ██╗ ██████╗ ██╗   ██╗    ███████╗███████╗██╗  ██╗ █████╗ 
 ██╔════╝████╗  ██║     ██║██╔═══██╗╚██╗ ██╔╝    ██╔════╝██╔════╝██║  ██║██╔══██╗
