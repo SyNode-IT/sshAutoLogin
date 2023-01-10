@@ -1,7 +1,7 @@
 #!/bin/bash
 # Author   :    AlicFeng & GuiGos
 # Email    :    a@samego.com / guillaume@guigos.com
-# Github   :    https://github.com/Gui-Gos/sshAutoLogin
+# Github   :    https://github.com/o-GuGus/sshAutoLogin
 
 # set color variables for 'printf' or 'echo'; example 'printf "${Green}"$VARIABLE" or text${ResetColor}\n"'
 Red="\e[0;31m"
@@ -234,7 +234,7 @@ function GPass() {
 	local ENCRYPTED=$(echo "${PASS}" | /usr/bin/openssl aes-256-ctr -md sha512 -a -A -S "${SALT}" -k "${KEY}" 2>/dev/null)
 	local Base_MachineE=$(printf '%s' "$MACHINE_NAME" | base64)
 	echo "hjxmDskUozjTivCVcjTUspxAZVgrSyfYTmnXGLNBfWbijsR=${Base_MachineE}"	> $Config_Pass/."$Base_MachineE"
-	echo "HKbWCRvUMXBDZehRnXbvwZQwSrnbZakcFhJ=${ENCRYPTED}"											>> $Config_Pass/."$Base_MachineE"
+	echo "HKbWCRvUMXBDZehRnXbvwZQwSrnbZakcFhJ=${ENCRYPTED}"					>> $Config_Pass/."$Base_MachineE"
 	echo "AFZKKgzyimHDfTeUowyYGeJZYdgpYZmRFukppSU=${SALT}"					>> $Config_Pass/."$Base_MachineE"
 	echo "aNHTuBTFTQEPVpdtbcYtwSHkEsQNCvf=${KEY}"							>> $Config_Pass/."$Base_MachineE"
     chmod 700 $Config_Pass/."$Base_MachineE"
@@ -279,7 +279,6 @@ echo "#############server_list[*]################"
 echo "${#server_list[*]}"
 echo "#############$server_list_length###############"
 echo "$server_list_length"
-#number=$(ls ~/.ssha | wc -l | tr -d '[:blank:]')
 }
 
 ##############################
@@ -300,14 +299,14 @@ case $ARGS in
     d)
         delete
         ;;
-    t)
-        test
-        ;;
     s)
         login "$OPTARG"
         ;;
     *)  
         usage
+        ;;
+    t)
+        test
         ;;
 esac
 done
