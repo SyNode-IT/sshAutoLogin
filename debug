@@ -93,11 +93,73 @@ banner()
 ##############################
 function list() {
     Close=1; Fit=20; bcount "Index\tDescription\tHost\tPort\tUsername\tPass|SecretKFile" && banner "${Red}Index\t${Green}Description\t${Blue}Host\tPort\tUsername\tPass|SecKFile${ResetColor}"
-    for ((i=0;i<"$server_list_length";i++));do
-        IFS=" " read -r -a servers <<< "${server_list[$i]}"
-        #servers=(${server_list[$i]})
-        Close=0; banner "${Red}${servers[0]}${ResetColor}\t${Green}${servers[1]}${ResetColor}\t${servers[2]}\t${servers[3]}\t${servers[4]}\t${servers[5]}"
-    done
+    
+    
+### https://www.hostinger.com/tutorials/bash-concatenate-strings
+
+
+
+ #   echo "for(i=0;i<"$server_list_length";i++) {i}" | bc
+    
+ concat=""
+ for ((i=0;i<"$server_list_length";i++)); do
+    
+    
+    IFS=" " read -r -a servers <<< "${server_list[$i]}"
+
+
+
+
+line=$(printf "\n${Red}${servers[0]}${ResetColor}\t${Green}${servers[1]}${ResetColor}\t${servers[2]}\t${servers[3]}\t${servers[4]}\t${servers[5]}")
+
+
+
+
+concat+="$line"
+
+
+ done
+
+echo "$concat" | sort -V
+
+
+#    echo "#################"
+#    for ((i=0;i<"$server_list_length";i++)); do
+
+# ${server_list[$i]}=a$i
+
+#        eval ${server_list[$i]}=$i
+#        echo ${server_list[$i]}=`eval echo ${server_list[$i]}$i`"
+
+  #      server=${server_list[$i]}
+
+
+#servers_order=$(echo $server | sort -n)
+#servers_order=$(servers_order servers_order)                  
+#     tata=$(cat /tmp/sort | sort -n)                
+
+#done
+
+#echo $servers_order
+
+#    for ((i=0;i<"$server_list_length";i++)); do
+#        IFS=" " read -r -a servers <<< "${server_list[$i]}"
+        
+#        echo "${server_list[$i]}"
+
+#        servers=(${server_list[$i]})
+#        Close=0; banner "${Red}-${servers[0]}-${ResetColor}\t${Green}${servers[1]}${ResetColor}\t${servers[2]}\t${servers[3]}\t${servers[4]}\t${servers[5]}" | tee | sort -n
+#    done
+
+
+#VAR=""
+#for ((i=0;i<"$server_list_length";i++)); do
+#  VAR+=$(echo "${server_list[$i]}")
+#done
+
+#echo "$VAR" | sort -V
+
+
     exit 0
 }
 
@@ -202,7 +264,8 @@ printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you real
     read -r info
     if [[ "$info" =~ ^[yYoO] ]]; then
     Close=1; Fit=4; bcount "'OK' Server number $srvnb is deleted" && banner "${Green}'OK' ${Blue}Server number ${Green}$srvnb ${Blue}is deleted${ResetColor}"
-    rm ~/.ssha/$srvnb*
+    #rm ~/.ssha/$srvnb*
+    rm ~/.ssha/"$srvnb"_*
     mkdir $DeletedFolder
     # call binary to check deleted folder and re order servers list & exit 0
     ssha
