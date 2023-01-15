@@ -126,31 +126,28 @@ fi
 # for debian
 function CheckDependencies_Debian {
 printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
-printf "${Green}Test of existing binaries (expect,toilet,wget) and installation of this one if they are not installed...${ResetColor}\n"
+printf "${Green}Test of existing binaries (expect,curl) and installation of this one if they are not installed...${ResetColor}\n"
 type expect >/dev/null 2>&1 || sudo apt-get install expect -y
-#type toilet >/dev/null 2>&1 || sudo apt-get install toilet -y
-type wget >/dev/null 2>&1 || sudo apt-get install wget -y
+type curl >/dev/null 2>&1 || sudo apt-get install curl -y
 }
 # for macos
 function CheckDependencies_MacOS {
 printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
-printf "${Green}Test of existing binaries (brew,expect,wget) and installation of this one if they are not installed...${ResetColor}\n"
+printf "${Green}Test of existing binaries (brew,expect,curl) and installation of this one if they are not installed...${ResetColor}\n"
 type brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 sudo chown -R "$(whoami)" /usr/local/bin
 sudo chmod u+w /usr/local/bin
 brew update --auto-update
 brew upgrade
 type expect >/dev/null 2>&1 || brew install expect
-#type toilet >/dev/null 2>&1 || brew install toilet
-type wget >/dev/null 2>&1 || brew install wget
+type curl >/dev/null 2>&1 || brew install curl
 }
 # for redhat
 function CheckDependencies_RedHat {
 printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
-printf "${Green}Test of existing binaries (expect,toilet,wget) and installation of this one if they are not installed...${ResetColor}\n"
+printf "${Green}Test of existing binaries (expect,curl) and installation of this one if they are not installed...${ResetColor}\n"
 type expect >/dev/null 2>&1 || sudo yum install expect -y
-#type toilet >/dev/null 2>&1 || sudo yum install toilet -y
-type wget >/dev/null 2>&1 || sudo yum install wget -y
+type curl >/dev/null 2>&1 || sudo yum install curl -y
 }
 
 ######################################################################
@@ -161,7 +158,7 @@ if [ -f $Bin ]; then
 printf "${Yellow}$Bin Exist. Go delete old version!${ResetColor}\n" && sudo rm /usr/local/bin/ssha
 fi
 printf "${Green}Installing the SSHA binary.${ResetColor}\n"
-sudo wget -O /usr/local/bin/ssha https://raw.githubusercontent.com/o-GuGus/sshAutoLogin/master/ssha
+sudo curl -o /usr/local/bin/ssha https://raw.githubusercontent.com/o-GuGus/sshAutoLogin/master/ssha
 sudo chmod a+x /usr/local/bin/ssha
 printf "${Green}███████╗███╗   ██╗     ██╗ ██████╗ ██╗   ██╗    ███████╗███████╗██╗  ██╗ █████╗ 
 ██╔════╝████╗  ██║     ██║██╔═══██╗╚██╗ ██╔╝    ██╔════╝██╔════╝██║  ██║██╔══██╗
