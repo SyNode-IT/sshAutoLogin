@@ -41,23 +41,39 @@ chown "$(whoami)" ~/.ssha/0_localhost.ini
 ssha -h
 fi
 
-# server length
+# number of registered servers
 server_list_length=${#server_list[*]}
 
-# deleted servers
+# if server have been deleted
 DeletedFolder=~/.ssha/.deleted
 if [ -d $DeletedFolder ];then
     # re order the servers list
     serversNewIndex=0
         for ((i=0;i<"$server_list_length";i++));do
-        servers=(${server_list[$i]})
-        rm ~/.ssha/$servers*
-        printf "Index=$serversNewIndex\nName=${servers[1]}\nHost=${servers[2]}\nPort=${servers[3]}\nUser=${servers[4]}\nPasswordOrKey=${servers[5]}\n" > ~/.ssha/"$serversNewIndex"_${servers[1]}.ini
-        chmod 700 ~/.ssha/"$serversNewIndex"_${servers[1]}.ini
+        server_data=(${server_list[$i]})
+        rm ~/.ssha/"${server_data[0]}"_"${server_data[1]}"*
+        printf "Index=$serversNewIndex\nName=${server_data[1]}\nHost=${server_data[2]}\nPort=${server_data[3]}\nUser=${server_data[4]}\nPasswordOrKey=${server_data[5]}\n" > ~/.ssha/"$serversNewIndex"_"${server_data[1]}".ini
+        chmod 700 ~/.ssha/"$serversNewIndex"_${server_data[1]}.ini
         serversNewIndex=$((serversNewIndex + 1))
         done
     rmdir $DeletedFolder
 fi
+
+# re-order the list of servers in good numeric order
+concatened=""
+for ((i=0;i<"$server_list_length";i++)); do
+	IFS=" " read -r -a data <<< "${server_list[$i]}"
+	line=$(printf "\n${data[0]} ${data[1]} ${data[2]} ${data[3]} ${data[4]} ${data[5]} ")
+	concatened+="$line"
+done
+# use a regular expression to remove leading and trailing blank spaces and blank lines
+clean=$(echo "$concatened" | sed -e 's/^[ \t]*//' -e '/^$/d')
+# sort in the correct numeric order
+inGoodOrder=$(printf "$clean" | sort -V)
+# use the assignment operator to add an empty row at the end
+inGoodOrder="$inGoodOrder"$'\n'
+# re create ordered array 'server_list_ordered[@]' / "server_list_ordered[0] = Index Description Host Port Username Pass" of server 0
+while read -r line; do server_list_ordered+=("$line"); done < <(printf "$inGoodOrder")
 
 ##############################
 # FUNCTION # bcount
@@ -91,12 +107,15 @@ banner()
 # FUNCTION # list servers
 ##############################
 function list() {
-    Close=1; Fit=20; bcount "Index\tDescription\tHost\tPort\tUsername\tPass|SecretKFile" && banner "${Red}Index\t${Green}Description\t${Blue}Host\tPort\tUsername\tPass|SecKFile${ResetColor}"
-    for ((i=0;i<"$server_list_length";i++));do
-        servers=(${server_list[$i]})
-        Close=0; banner "${Red}${servers[0]}${ResetColor}\t${Green}${servers[1]}${ResetColor}\t${servers[2]}\t${servers[3]}\t${servers[4]}\t${servers[5]}"
-    done
-    exit 0
+# print banner of array
+Close=1; Fit=20; bcount "Index\tDescription\tHost\tPort\tUsername\tPass|SecretKFile" && banner "${Red}Index\t${Green}Description\t${Blue}Host\tPort\tUsername\tPass|SecKFile${ResetColor}"
+for ((i=0;i<"$server_list_length";i++)); do
+	# set space as internal separator and fill the "server" array with each separated value / {server[0]}=Index / {server[1]}=Description ...
+	IFS=' ' read -r -a server <<< "${server_list_ordered[$i]}"
+	# print to screen
+    Close=0; banner "${Red}${server[0]}${ResetColor}\t${Green}${server[1]}${ResetColor}\t${server[2]}\t${server[3]}\t${server[4]}\t${server[5]}"
+done
+exit 0
 }
 
 ##############################
@@ -112,11 +131,14 @@ printf "${Blue}ssha${ResetColor} [${Blue}-h${ResetColor}] [${Green}-l${ResetColo
 # FUNCTION # login to server
 ##############################
 function login() {
-    server=(${server_list[$1]})
-    v5NZ8jBr2HoQYD=${server[5]}
-    zodVApcRdLi4Kz=$(DPass "$v5NZ8jBr2HoQYD")
-    pem="$zodVApcRdLi4Kz"
-    Close=1; Fit=6; bcount "$USER logging into the【${server[1]}】server" && banner "${Blue}$USER${ResetColor} ${Green}logging${ResetColor} into the${Yellow}【${server[1]}】${ResetColor}server"
+# set space as internal separator and fill the "server" array with each separated value / {server[0]}=Index / {server[1]}=Description ...
+IFS=' ' read -r -a server <<< "${server_list_ordered[$@]}"
+# set var
+v5NZ8jBr2HoQYD=${server[5]}
+zodVApcRdLi4Kz=$(DPass "$v5NZ8jBr2HoQYD")
+pem="$zodVApcRdLi4Kz"
+  # banner login
+  Close=1; Fit=6; bcount "$USER logging into the【${server[1]}】server" && banner "${Blue}$USER${ResetColor} ${Green}logging${ResetColor} into the${Yellow}【${server[1]}】${ResetColor}server"
 	command="
         expect {
                 \"*assword\" {set timeout 6000; send \"$pem\n\"; exp_continue ; sleep 3; }
@@ -129,7 +151,7 @@ function login() {
    if [ -f "$pem" ]
    then
 	expect -c "
-		spawn ssh -p ${server[2]} -i $pem ${server[3]}@${server[2]}
+		spawn ssh -p ${server[3]} -i $pem ${server[4]}@${server[2]}
 		${command}
 	"
    else
@@ -138,7 +160,8 @@ function login() {
 		${command}
 	"
    fi
-    Close=1; Fit=6; bcount "$USER logged out the【${server[1]}】server" && banner "${Blue}$USER${ResetColor} ${Red}logged out${ResetColor} the${Yellow}【${server[1]}】${ResetColor}server"
+  # banner logout
+  Close=1; Fit=6; bcount "$USER logged out the【${server[1]}】server" && banner "${Blue}$USER${ResetColor} ${Red}logged out${ResetColor} the${Yellow}【${server[1]}】${ResetColor}server"
 }
 
 ##############################
@@ -192,7 +215,7 @@ function delete() {
 ssha -l
 printf "\n${Blue}Which server do you want to delete ? ${Yellow}(Enter the number)${ResetColor}\n"
 read -r srvnb
-if [[ ! "$srvnb" < "$server_list_length" ]]; then
+if [[ ! "$srvnb" -lt "$server_list_length" ]]; then
 printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
 exit 1
 else
@@ -200,7 +223,7 @@ printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you real
     read -r info
     if [[ "$info" =~ ^[yYoO] ]]; then
     Close=1; Fit=4; bcount "'OK' Server number $srvnb is deleted" && banner "${Green}'OK' ${Blue}Server number ${Green}$srvnb ${Blue}is deleted${ResetColor}"
-    rm ~/.ssha/$srvnb*
+    rm ~/.ssha/"$srvnb"_*
     mkdir $DeletedFolder
     # call binary to check deleted folder and re order servers list & exit 0
     ssha
@@ -274,7 +297,7 @@ function DPass() {
 ##############################
 while getopts hlcds: ARGS
 do
-case $ARGS in
+case "$ARGS" in
     h)
         usage
         ;;
