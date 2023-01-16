@@ -1,5 +1,5 @@
 #!/bin/bash
-# Author   :    AlicFeng & GuiGos
+# Author   :    AlicFeng & GuGus
 # Email    :    a@samego.com / guillaume@guigos.com
 # Github   :    https://github.com/o-GuGus/sshAutoLogin
 
@@ -133,14 +133,18 @@ type curl >/dev/null 2>&1 || sudo apt-get install curl -y
 # for macos
 function CheckDependencies_MacOS {
 printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
-printf "${Green}Test of existing binaries (brew,expect,curl) and installation of this one if they are not installed...${ResetColor}\n"
-type brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+printf "${Green}Test of existing binaries (expect,curl) and installation of this one if they are not installed...${ResetColor}\n"
+if ! type expect >/dev/null 2>&1 || ! type curl >/dev/null 2>&1; then
+# download and configure brew
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 sudo chown -R "$(whoami)" /usr/local/bin
 sudo chmod u+w /usr/local/bin
 brew update --auto-update
 brew upgrade
+# download and install bin
 type expect >/dev/null 2>&1 || brew install expect
 type curl >/dev/null 2>&1 || brew install curl
+fi
 }
 # for redhat
 function CheckDependencies_RedHat {
