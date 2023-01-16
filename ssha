@@ -219,7 +219,7 @@ if [[ ! "$srvnb" -lt "$server_list_length" ]]; then
 printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
 exit 1
 else
-printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you really want to delete this server ? (Y/N)${ResetColor}\n"
+printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you really want to delete this server ? (${Green}Y${ResetColor}/${Red}N${ResetColor})${ResetColor}\n"
     read -r info
     if [[ "$info" =~ ^[yYoO] ]]; then
     Close=1; Fit=4; bcount "'OK' Server number $srvnb is deleted" && banner "${Green}'OK' ${Blue}Server number ${Green}$srvnb ${Blue}is deleted${ResetColor}"
