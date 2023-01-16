@@ -20,7 +20,7 @@ ___
 > **Simply to install**
 - Universal (MacOS - Debian - Ubuntu - Mint - CentOS - Fedora - OpenSuse- RedHat)
 ~~~shell
-/bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/o-GuGus/sshAutoLogin/master/Install.sh)"
+/bin/bash -c "$(curl -sSL https://raw.githubusercontent.com/o-GuGus/sshAutoLogin/master/install.sh)"
 ~~~
 
 ___
