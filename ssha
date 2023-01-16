@@ -1,5 +1,5 @@
 #!/bin/bash
-# Author   :    AlicFeng & GuiGos
+# Author   :    AlicFeng & GuGus
 # Email    :    a@samego.com / guillaume@guigos.com
 # Github   :    https://github.com/o-GuGus/sshAutoLogin
 
@@ -189,7 +189,7 @@ printf "${Yellow}Username:${Green} $user ${ResetColor}\n"
 printf "${Yellow}Password/Key (hidden):${Green} $pass ${ResetColor}\n"
 
 # Informations is correct ?! #
-printf "\n${Blue}Informations is correct ?! (Y/N)${ResetColor}\n"
+printf "\n${Blue}Informations is correct ?! (${Green}Y${ResetColor}/${Red}N${ResetColor})${ResetColor}\n"
 read -r info
 if [[ "$info" =~ ^[yYoO] ]]; then
 	printf "Index=$server_list_length\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$POK\n" > ~/.ssha/"$server_list_length"_"$name".conf
