@@ -1,5 +1,5 @@
 #!/bin/bash
-# Author   :    AlicFeng & GuiGos
+# Author   :    AlicFeng & GuGus
 # Email    :    a@samego.com / guillaume@guigos.com
 # Github   :    https://github.com/o-GuGus/sshAutoLogin
 
@@ -113,7 +113,7 @@ for ((i=0;i<"$server_list_length";i++)); do
 	# set space as internal separator and fill the "server" array with each separated value / {server[0]}=Index / {server[1]}=Description ...
 	IFS=' ' read -r -a server <<< "${server_list_ordered[$i]}"
 	# print to screen
-    Close=0; banner "${Red}${server[0]}${ResetColor}\t${Green}${server[1]}${ResetColor}\t${server[2]}\t${server[3]}\t${server[4]}\t${server[5]}"
+    Close=1; banner "${Red}${server[0]}${ResetColor}\t${Green}${server[1]}${ResetColor}\t${server[2]}\t${server[3]}\t${server[4]}\t${server[5]}"
 done
 exit 0
 }
@@ -189,7 +189,7 @@ printf "${Yellow}Username:${Green} $user ${ResetColor}\n"
 printf "${Yellow}Password/Key (hidden):${Green} $pass ${ResetColor}\n"
 
 # Informations is correct ?! #
-printf "\n${Blue}Informations is correct ?! (Y/N)${ResetColor}\n"
+printf "\n${Blue}Informations is correct ?! (${Green}Y${ResetColor}/${Red}N${ResetColor})${ResetColor}\n"
 read -r info
 if [[ "$info" =~ ^[yYoO] ]]; then
 	printf "Index=$server_list_length\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$POK\n" > ~/.ssha/"$server_list_length"_"$name".conf
@@ -219,7 +219,7 @@ if [[ ! "$srvnb" -lt "$server_list_length" ]]; then
 printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
 exit 1
 else
-printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you really want to delete this server ? (Y/N)${ResetColor}\n"
+printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you really want to delete this server ? (${Green}Y${ResetColor}/${Red}N${ResetColor})${ResetColor}\n"
     read -r info
     if [[ "$info" =~ ^[yYoO] ]]; then
     Close=1; Fit=4; bcount "'OK' Server number $srvnb is deleted" && banner "${Green}'OK' ${Blue}Server number ${Green}$srvnb ${Blue}is deleted${ResetColor}"
