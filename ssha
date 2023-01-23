@@ -215,7 +215,7 @@ function delete() {
 ssha -l
 printf "\n${Blue}Which server do you want to delete ? ${Yellow}(Enter the number)${ResetColor}\n"
 read -r srvnb
-if [[ ! "$srvnb" -lt "$server_list_length" ]]; then
+if [[ ! "$srvnb" -le "$server_list_length" ]]; then
 printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
 exit 1
 else
