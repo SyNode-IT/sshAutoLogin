@@ -68,22 +68,22 @@ function RootorUser {
 	# Get the current user's name
 	Name=$(whoami)
 	# Print a message to indicate that the script is checking for sudo or root permissions
-	printf "${Yellow}Hello '${Green}$Name${Yellow}' We will test if you have sudo or root permissions${ResetColor}\n"
+	printf "${Yellow}Hello '${Green}$Name${Yellow}' We will test if you have sudo or root permissions.${ResetColor}\n"
 	# Check if the current user is not root
 	if [ "$Name" != "root" ]; then
 		# Check if the user has sudo privileges
 		if ! sudo -l; then
 			# If the user does not have sudo privileges, print an error message and exit the script
-			printf "${Red}'$Name' Is not a sudoers account${ResetColor}\n"
-			printf "${Red}Please log in as a root or admin account and restart the script '$0'${ResetColor}\n"
+			printf "${Red}'$Name' Is not a sudoers account.${ResetColor}\n"
+			printf "${Red}Please log in as a root or admin account and restart the script '$0' !${ResetColor}\n"
 			exit 1
 		else
 			# If the user has sudo privileges, print a success message
-			printf "${Green}'$Name' Is a sudoers account${ResetColor}\n"
+			printf "${Green}'$Name' Is a sudoers account.${ResetColor}\n"
 		fi
 	else
 		# If the user is root, print a success message
-		printf "${Green}'$Name' Is a good account${ResetColor}\n"
+		printf "${Green}'$Name' Is a good account.${ResetColor}\n"
 	fi
 }
 
@@ -96,21 +96,21 @@ function ConfigDir {
   Config_Dir=~/.ssha
   # Check if configuration directory exists
   if [ -d $Config_Dir ]; then
-    printf "${Green}$Config_Dir Folder exist.${ResetColor}\n"
+    printf "${Green}'$Config_Dir' Folder exist.${ResetColor}\n"
   else
     # Create configuration directory if it doesn't exist
-    printf "${Green}$Config_Dir Folder does not exist, creating directory.${ResetColor}\n"
+    printf "${Green}'$Config_Dir' Folder does not exist, creating directory.${ResetColor}\n"
     sudo mkdir $Config_Dir
   fi
   # Set the configuration file for localhost
   localFile=$Config_Dir/0_localhost.ini
   if [ -f $localFile ]; then
     # If configuration file exists, remove it and create a new one
-    printf "${Green}$localFile Exist.${ResetColor}\n"
+    printf "${Green}'$localFile' Exist.${ResetColor}\n"
     sudo rm "$localFile"
   else
     # If configuration file doesn't exist, create a new one
-    printf "${Green}$localFile Does not exist, creating file.${ResetColor}\n"
+    printf "${Green}'$localFile' Does not exist, creating file.${ResetColor}\n"
   fi
   printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > $localFile
   sudo chmod -R 700 $Config_Dir
@@ -164,7 +164,7 @@ function InstallBIN {
   Bin="/usr/local/bin/ssha"
   # Check if the binary exists and remove it if it does
   if [ -f $Bin ]; then
-    printf "${Yellow}$Bin Exist. Go delete old version!${ResetColor}\n" && sudo rm /usr/local/bin/ssha
+    printf "${Yellow}'$Bin' Exist. Go delete old version!${ResetColor}\n" && sudo rm /usr/local/bin/ssha
   fi
   # Download and install the SSHA binary
   printf "${Green}Installing the SSHA binary.${ResetColor}\n"
