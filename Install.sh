@@ -68,7 +68,7 @@ function RootorUser {
 	# Get the current user's name
 	Name=$(whoami)
 	# Print a message to indicate that the script is checking for sudo or root permissions
-	printf "${Yellow}Hello '${Green}$Name${Yellow}' We will test if you have sudo or root permissions.${ResetColor}\n"
+	printf "${Blue}👋 '${Green}$Name${Blue}' We will test if you have sudo or root permissions.${ResetColor}\n"
 	# Check if the current user is not root
 	if [ "$Name" != "root" ]; then
 		# Check if the user has sudo privileges
@@ -189,4 +189,3 @@ RootorUser
 ConfigDir
 CheckDependencies_$OS
 InstallBIN
-
