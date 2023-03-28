@@ -162,7 +162,7 @@ function InstallBIN {
   Bin="/usr/local/bin/ssha"
   # Check if the binary exists and remove it if it does
   if [ -f $Bin ]; then
-    printf "${Yellow}'$Bin' Exist. ${Blue}Go delete old version!${ResetColor}\n" && sudo rm /usr/local/bin/ssha
+    printf "${Yellow}'$Bin' ${Blue}Exist. Go delete old version!${ResetColor}\n" && sudo rm /usr/local/bin/ssha
   fi
   # Download and install the SSHA binary
   printf "${Blue}Installing the SSHA binary.${ResetColor}\n"
