@@ -74,43 +74,41 @@ function RootorUser {
 		# Check if the user has sudo privileges
 		if ! sudo -l; then
 			# If the user does not have sudo privileges, print an error message and exit the script
-			printf "${Red}'$Name' Is not a sudoers account.${ResetColor}\n"
+			printf "${Red}🚫 '$Name' Is not a sudoers account.${ResetColor}\n"
 			printf "${Red}Please log in as a root or admin account and restart the script '$0' !${ResetColor}\n"
 			exit 1
 		else
 			# If the user has sudo privileges, print a success message
-			printf "${Green}'$Name' Is a sudoers account.${ResetColor}\n"
+			printf "${Green}✅ '$Name' Is a sudoers account.${ResetColor}\n"
 		fi
 	else
 		# If the user is root, print a success message
-		printf "${Green}'$Name' Is a good account.${ResetColor}\n"
+		printf "${Green}✅ '$Name' Is a good account.${ResetColor}\n"
 	fi
 }
 
 ################################################################
 ### Function to configure directory and file for the program ###
 function ConfigDir {
-  # Print message indicating the program is being installed
-  printf "${Blue}The script is installing the program, please wait...${ResetColor}\n"
   # Set the configuration directory
   Config_Dir=~/.ssha
   # Check if configuration directory exists
   if [ -d $Config_Dir ]; then
-    printf "${Green}'$Config_Dir' Folder exist.${ResetColor}\n"
+    printf "${Green}🗂️ '$Config_Dir' Folder exist.${ResetColor}\n"
   else
     # Create configuration directory if it doesn't exist
-    printf "${Green}'$Config_Dir' Folder does not exist, creating directory.${ResetColor}\n"
+    printf "${Yellow}🗂️ '$Config_Dir' Folder does not exist, creating directory.${ResetColor}\n"
     sudo mkdir $Config_Dir
   fi
   # Set the configuration file for localhost
   localFile=$Config_Dir/0_localhost.ini
   if [ -f $localFile ]; then
     # If configuration file exists, remove it and create a new one
-    printf "${Green}'$localFile' Exist.${ResetColor}\n"
+    printf "${Green}📄 '$localFile' Exist.${ResetColor}\n"
     sudo rm "$localFile"
   else
     # If configuration file doesn't exist, create a new one
-    printf "${Green}'$localFile' Does not exist, creating file.${ResetColor}\n"
+    printf "${Yellow}📄 '$localFile' Does not exist, creating file.${ResetColor}\n"
   fi
   printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > $localFile
   sudo chmod -R 700 $Config_Dir
