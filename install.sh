@@ -166,7 +166,11 @@ function InstallBIN {
   fi
   # Download and install the SSHA binary
   printf "${Blue}Installing the SSHA binary.${ResetColor}\n"
-  sudo wget -O /usr/local/bin/ssha https://raw.githubusercontent.com/o-GuGus/sshAutoLogin/master/ssha
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+    sudo curl -o /usr/local/bin/ssha https://raw.githubusercontent.com/o-GuGus/sshAutoLogin/master/ssha
+    else 
+    sudo wget -O /usr/local/bin/ssha https://raw.githubusercontent.com/o-GuGus/sshAutoLogin/master/ssha
+    fi
   sudo chmod a+x /usr/local/bin/ssha
   # Print the SSHA logo and display the help menu
   printf "${Green}███████╗███╗   ██╗     ██╗ ██████╗ ██╗   ██╗    ███████╗███████╗██╗  ██╗ █████╗ 
