@@ -74,16 +74,16 @@ function RootorUser {
 		# Check if the user has sudo privileges
 		if ! sudo -l; then
 			# If the user does not have sudo privileges, print an error message and exit the script
-			printf "${Red}🚫 '$Name' Is not a sudoers account.${ResetColor}\n"
+			printf "${Red}🚫 '$Name' ${Blue}Is not a sudoers account.${ResetColor}\n"
 			printf "${Red}Please log in as a root or admin account and restart the script '$0' !${ResetColor}\n"
 			exit 1
 		else
 			# If the user has sudo privileges, print a success message
-			printf "${Green}✅ '$Name' Is a sudoers account.${ResetColor}\n"
+			printf "${Green}✅ '$Name' ${Blue}Is a sudoers account.${ResetColor}\n"
 		fi
 	else
 		# If the user is root, print a success message
-		printf "${Green}✅ '$Name' Is a good account.${ResetColor}\n"
+		printf "${Green}✅ '$Name' ${Blue}Is a good account.${ResetColor}\n"
 	fi
 }
 
