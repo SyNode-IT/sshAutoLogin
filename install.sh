@@ -68,7 +68,7 @@ function RootorUser {
 	# Get the current user's name
 	Name=$(whoami)
 	# Print a message to indicate that the script is checking for sudo or root permissions
-	printf "${Blue}👋 '${Green}$Name${Blue}' We will test if you have sudo or root permissions.${ResetColor}\n"
+	printf "👋 ${Green}'$Name' ${Blue}We will test if you have sudo or root permissions.${ResetColor}\n"
 	# Check if the current user is not root
 	if [ "$Name" != "root" ]; then
 		# Check if the user has sudo privileges
@@ -94,21 +94,21 @@ function ConfigDir {
   Config_Dir=~/.ssha
   # Check if configuration directory exists
   if [ -d $Config_Dir ]; then
-    printf "${Green}🗂️ '$Config_Dir' Folder exist.${ResetColor}\n"
+    printf "${Green}🗂️ '$Config_Dir' ${Blue}Folder exist.${ResetColor}\n"
   else
     # Create configuration directory if it doesn't exist
-    printf "${Yellow}🗂️ '$Config_Dir' Folder does not exist, creating directory.${ResetColor}\n"
+    printf "${Yellow}🗂️ '$Config_Dir' ${Blue}Folder does not exist, creating directory.${ResetColor}\n"
     sudo mkdir $Config_Dir
   fi
   # Set the configuration file for localhost
   localFile=$Config_Dir/0_localhost.ini
   if [ -f $localFile ]; then
     # If configuration file exists, remove it and create a new one
-    printf "${Green}📄 '$localFile' Exist.${ResetColor}\n"
+    printf "${Green}📄 '$localFile' ${Blue}Exist.${ResetColor}\n"
     sudo rm "$localFile"
   else
     # If configuration file doesn't exist, create a new one
-    printf "${Yellow}📄 '$localFile' Does not exist, creating file.${ResetColor}\n"
+    printf "${Yellow}📄 '$localFile' ${Blue}Does not exist, creating file.${ResetColor}\n"
   fi
   printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > $localFile
   sudo chmod -R 700 $Config_Dir
@@ -120,9 +120,9 @@ function ConfigDir {
 # CheckDependencies_Debian function for Debian-based systems
 function CheckDependencies_Debian {
     # Print OS information
-    printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
+    printf "${Blue}⇢ This machine works with OS based on ${Green}$OS${ResetColor}\n"
     # Print message for testing and installing dependencies
-    printf "${Green}Testing existing binaries (expect, wget) and installing missing ones...${ResetColor}\n"
+    printf "${Blue}↪ Testing existing binaries (expect, wget) and installing missing ones...${ResetColor}\n"
     # Check for and install expect and wget
     type expect >/dev/null 2>&1 || sudo apt-get install expect -y
     type wget >/dev/null 2>&1 || sudo apt-get install wget -y
@@ -130,9 +130,9 @@ function CheckDependencies_Debian {
 # CheckDependencies_MacOS function for MacOS
 function CheckDependencies_MacOS {
     # Print OS information
-    printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
+    printf "${Blue}⇢ This machine works with OS based on ${Green}$OS${ResetColor}\n"
     # Print message for testing and installing dependencies
-    printf "${Green}Testing existing binaries (brew, expect, wget) and installing missing ones...${ResetColor}\n"
+    printf "${Blue}↪ Testing existing binaries (brew, expect, wget) and installing missing ones...${ResetColor}\n"
     # Check for and install brew
     type brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     # Set permissions for /usr/local/bin
@@ -147,9 +147,9 @@ function CheckDependencies_MacOS {
 # CheckDependencies_RedHat function for RedHat-based systems
 function CheckDependencies_RedHat {
     # Print OS information
-    printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
+    printf "${Blue}⇢ This machine works with OS based on ${Green}$OS${ResetColor}\n"
     # Print message for testing and installing dependencies
-    printf "${Green}Testing existing binaries (expect, wget) and installing missing ones...${ResetColor}\n"
+    printf "${Blue}↪ Testing existing binaries (expect, wget) and installing missing ones...${ResetColor}\n"
     # Check for and install expect and wget
     type expect >/dev/null 2>&1 || sudo yum install expect -y
     type wget >/dev/null 2>&1 || sudo yum install wget -y
@@ -162,10 +162,10 @@ function InstallBIN {
   Bin="/usr/local/bin/ssha"
   # Check if the binary exists and remove it if it does
   if [ -f $Bin ]; then
-    printf "${Yellow}'$Bin' Exist. Go delete old version!${ResetColor}\n" && sudo rm /usr/local/bin/ssha
+    printf "${Yellow}'$Bin' Exist. ${Blue}Go delete old version!${ResetColor}\n" && sudo rm /usr/local/bin/ssha
   fi
   # Download and install the SSHA binary
-  printf "${Green}Installing the SSHA binary.${ResetColor}\n"
+  printf "${Blue}Installing the SSHA binary.${ResetColor}\n"
   sudo wget -O /usr/local/bin/ssha https://raw.githubusercontent.com/o-GuGus/sshAutoLogin/master/ssha
   sudo chmod a+x /usr/local/bin/ssha
   # Print the SSHA logo and display the help menu
