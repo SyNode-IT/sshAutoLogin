@@ -132,17 +132,19 @@ function CheckDependencies_MacOS {
     # Print OS information
     printf "${Blue}⇢ This machine works with OS based on ${Green}$OS${ResetColor}\n"
     # Print message for testing and installing dependencies
-    printf "${Blue}↪ Testing existing binaries (brew, expect, wget) and installing missing ones...${ResetColor}\n"
-    # Check for and install brew
-    type brew >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    # Set permissions for /usr/local/bin
-    sudo chown -R "$(whoami)" /usr/local/bin
-    sudo chmod u+w /usr/local/bin
-    # Update and upgrade brew and install expect and wget
-    brew update --auto-update
-    brew upgrade
-    type expect >/dev/null 2>&1 || brew install expect
-    type wget >/dev/null 2>&1 || brew install wget
+    printf "${Blue}↪ Testing existing binaries (expect, curl) and installing missing ones...${ResetColor}\n"
+    # Checking if the expect and curl commands are available, else install brew with expect and wget
+    type expect >/dev/null 2>&1 && type curl >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    if type brew >/dev/null 2>&1; then
+        # Set permissions for /usr/local/bin
+        sudo chown -R "$(whoami)" /usr/local/bin
+        sudo chmod u+w /usr/local/bin
+        # Update and upgrade brew and install expect and wget
+        brew update --auto-update
+        brew upgrade
+        type expect >/dev/null 2>&1 || brew install expect
+        type wget >/dev/null 2>&1 || brew install wget
+    fi
 }
 # CheckDependencies_RedHat function for RedHat-based systems
 function CheckDependencies_RedHat {
