@@ -100,6 +100,8 @@ function ConfigDir {
     printf "${Yellow}🗂️ '$Config_Dir' ${Blue}Folder does not exist, creating directory.${ResetColor}\n"
     sudo mkdir $Config_Dir
   fi
+  sudo chmod -R 700 $Config_Dir
+  sudo chown -R "$(whoami)" $Config_Dir
   # Set the configuration file for localhost
   localFile=$Config_Dir/0_localhost.ini
   if [ -f $localFile ]; then
