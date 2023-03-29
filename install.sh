@@ -1,7 +1,7 @@
 #!/bin/bash
-# Author   :    GuGus
-# Email    :    guillaume@guigos.com
-# Github   :    https://github.com/o-GuGus/sshAutoLogin
+# Authors   :    AlicFeng & GuGus
+# Emails    :    a@samego.com / guillaume@guigos.com
+# Githubs   :    https://github.com/alicfeng/sshAutoLogin / https://github.com/o-GuGus/sshAutoLogin
 
 ###########################################
 ### Terminal Colors and Screen Clearing ###
