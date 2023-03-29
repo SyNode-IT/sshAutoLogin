@@ -113,7 +113,7 @@ for ((i=0;i<"$server_list_length";i++)); do
 	# set space as internal separator and fill the "server" array with each separated value / {server[0]}=Index / {server[1]}=Description ...
 	IFS=' ' read -r -a server <<< "${server_list_ordered[$i]}"
 	# print to screen
-    Close=0; banner "${Red}${server[0]}${ResetColor}\t${Green}${server[1]}${ResetColor}\t${server[2]}\t${server[3]}\t${server[4]}\t${server[5]}"
+    Close=0; banner "${Red}"$i"${ResetColor}\t${Green}${server[1]}${ResetColor}\t${server[2]}\t${server[3]}\t${server[4]}\t${server[5]}"
 done
 exit 0
 }
@@ -215,7 +215,7 @@ function delete() {
 ssha -l
 printf "\n${Blue}Which server do you want to delete ? ${Yellow}(Enter the number)${ResetColor}\n"
 read -r srvnb
-if [[ ! "$srvnb" -lt "$server_list_length" ]]; then
+if [[ ! "$srvnb" -le "$server_list_length" ]]; then
 printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
 exit 1
 else
