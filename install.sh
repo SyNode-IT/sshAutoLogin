@@ -16,7 +16,7 @@ ResetColor="\e[0m"
 
 ######################################
 ### Banners with ASCII art in Bash ###
-function BANNER1 { # ANSI Shadow
+function Banner { # ANSI Shadow & ANSI Regular
 printf "${Blue}███████╗███████╗██╗  ██╗
 ██╔════╝██╔════╝██║  ██║
 ███████╗███████╗███████║
@@ -37,9 +37,7 @@ printf "${Blue}		██╗      ██████╗  ██████╗ █
 		██║     ██║   ██║██║   ██║██║██║╚██╗██║
 		███████╗╚██████╔╝╚██████╔╝██║██║ ╚████║
 		╚══════╝ ╚═════╝  ╚═════╝ ╚═╝╚═╝  ╚═══╝${ResetColor}\n"
-}
 
-function BANNER2 { # ANSI Regular
 printf "${Blue}██████  ██    ██      ██████  ██    ██  ██████  ██    ██ ███████ 
 ██   ██  ██  ██      ██       ██    ██ ██       ██    ██ ██      
 ██████    ████       ██   ███ ██    ██ ██   ███ ██    ██ ███████ 
@@ -162,7 +160,7 @@ function CheckDependencies_RedHat {
 #########################################################################
 ### Function for installation of SSHA binary with output confirmation ###
 # Install and run the SSHA binary
-function InstallBIN {
+function InstallBin {
   Bin="/usr/local/bin/ssha"
   # Check if the binary exists and remove it if it does
   if [ -f $Bin ]; then
@@ -188,10 +186,9 @@ function InstallBIN {
 
 ######################################################################
 # SCRIPT OF INSTALL START HERE #
-BANNER1
-BANNER2
+Banner
 DetectOS
 RootorUser
 ConfigDir
 CheckDependencies_$OS
-InstallBIN
+InstallBin
