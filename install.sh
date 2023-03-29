@@ -120,7 +120,7 @@ function ConfigDir {
 # CheckDependencies_Debian function for Debian-based systems
 function CheckDependencies_Debian {
     # Print OS information
-    printf "${Blue}⇢ This machine works with OS based on ${Green}$OS${ResetColor}\n"
+    printf "${Blue}⇢ This machine works with OS based on ${Green}'$OS'${ResetColor}\n"
     # Print message for testing and installing dependencies
     printf "${Blue}↪ Testing existing binaries (expect, wget) and installing missing ones...${ResetColor}\n"
     # Check for and install expect and wget
@@ -130,10 +130,10 @@ function CheckDependencies_Debian {
 # CheckDependencies_MacOS function for MacOS
 function CheckDependencies_MacOS {
     # Print OS information
-    printf "${Blue}⇢ This machine works with OS based on ${Green}$OS${ResetColor}\n"
+    printf "${Blue}⇢ This machine works with OS based on ${Green}'$OS'${ResetColor}\n"
     # Print message for testing and installing dependencies
     printf "${Blue}↪ Testing existing binaries (expect, curl) and installing missing ones...${ResetColor}\n"
-    # Checking if the expect and curl commands are available, else install brew with expect and wget
+    # Checking if the expect and curl commands are available, else install brew with expect, curl and wget
     type expect >/dev/null 2>&1 && type curl >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     if type brew >/dev/null 2>&1; then
         # Set permissions for /usr/local/bin
@@ -143,13 +143,14 @@ function CheckDependencies_MacOS {
         brew update --auto-update
         brew upgrade
         type expect >/dev/null 2>&1 || brew install expect
+        type curl >/dev/null 2>&1 || brew install curl
         type wget >/dev/null 2>&1 || brew install wget
     fi
 }
 # CheckDependencies_RedHat function for RedHat-based systems
 function CheckDependencies_RedHat {
     # Print OS information
-    printf "${Blue}⇢ This machine works with OS based on ${Green}$OS${ResetColor}\n"
+    printf "${Blue}⇢ This machine works with OS based on ${Green}'$OS'${ResetColor}\n"
     # Print message for testing and installing dependencies
     printf "${Blue}↪ Testing existing binaries (expect, wget) and installing missing ones...${ResetColor}\n"
     # Check for and install expect and wget
