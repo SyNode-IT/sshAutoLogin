@@ -1,21 +1,22 @@
 #!/bin/bash
-# Author   :    AlicFeng & GuGus
-# Email    :    a@samego.com / guillaume@guigos.com
-# Github   :    https://github.com/o-GuGus/sshAutoLogin
+# Authors   :    AlicFeng & GuGus
+# Emails    :    a@samego.com / guillaume@guigos.com
+# Githubs   :    https://github.com/alicfeng/sshAutoLogin / https://github.com/o-GuGus/sshAutoLogin
 
-######################################################################
-### clear screen ###
+###########################################
+### Terminal Colors and Screen Clearing ###
 clear
-### set color variables for 'printf' or 'echo' ### example 'printf "${Green}"$VARIABLE" or text${ResetColor}\n"'
+# set color variables for 'printf' or 'echo'
+# example 'printf "${Green}"$VARIABLE" or text${ResetColor}\n"'
 Red="\e[0;31m"
 Green="\e[0;32m"
 Yellow="\e[0;33m"
 Blue="\e[0;34m"
 ResetColor="\e[0m"
 
-######################################################################
-### banners ###
-function BANNER1 { # ANSI Shadow
+######################################
+### Banners with ASCII art in Bash ###
+function Banner { # ANSI Shadow & ANSI Regular
 printf "${Blue}███████╗███████╗██╗  ██╗
 ██╔════╝██╔════╝██║  ██║
 ███████╗███████╗███████║
@@ -36,9 +37,7 @@ printf "${Blue}		██╗      ██████╗  ██████╗ █
 		██║     ██║   ██║██║   ██║██║██║╚██╗██║
 		███████╗╚██████╔╝╚██████╔╝██║██║ ╚████║
 		╚══════╝ ╚═════╝  ╚═════╝ ╚═╝╚═╝  ╚═══╝${ResetColor}\n"
-}
 
-function BANNER2 { # ANSI Regular
 printf "${Blue}██████  ██    ██      ██████  ██    ██  ██████  ██    ██ ███████ 
 ██   ██  ██  ██      ██       ██    ██ ██       ██    ██ ██      
 ██████    ████       ██   ███ ██    ██ ██   ███ ██    ██ ███████ 
@@ -46,139 +45,151 @@ printf "${Blue}██████  ██    ██      ██████  █
 ██████     ██         ██████   ██████   ██████   ██████  ███████\n\n${ResetColor}\n"
 }
 
-######################################################################
-### detect os ###
+###########################################################################################
+### This function allows to detect the operating system on which the script is executed ###
 function DetectOS {
-# Mac OS
-MacOS=$(uname -a | grep -c MacOS)
-Darwin=$(uname -a | grep -c Darwin)
-# Debian
-Debian=$(uname -a | grep -c Debian)
-Ubuntu=$(uname -a | grep -c Ubuntu)
-# Redhat
-CentOS=$(uname -a | grep -c CentOS)
-Fedora=$(uname -a | grep -c Fedora)
-OpenSuse=$(uname -a | grep -c OpenSuse)
-RedHat=$(uname -a | grep -c RedHat)
-if [ $MacOS -gt 0 ] || [ $Darwin -gt 0 ]; then
-OS="MacOS"
-fi
-if [ $Debian -gt 0 ] || [ $Ubuntu -gt 0 ]; then
-OS="Debian"
-fi
-if [ $RedHat -gt 0 ] || [ $Fedora -gt 0 ] || [ $OpenSuse -gt 0 ] || [ $CentOS -gt 0 ]; then
-OS="RedHat"
-fi
+  # If the system is MacOS, we set the OS variable to "MacOS"
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    OS="MacOS"
+  # If the system is Debian, Ubuntu or Mint, we set the OS variable to "Debian"
+  elif [[ "$(cat /etc/issue)" == *"Debian"* || "$(cat /etc/issue)" == *"Ubuntu"* || "$(cat /etc/issue)" == *"Mint"* ]]; then
+    OS="Debian"
+  # If the system is Red Hat, CentOS, Fedora or OpenSUSE, we set the OS variable to "RedHat"
+  elif [[ "$(cat /etc/issue)" == *"Red Hat"* || "$(cat /etc/issue)" == *"CentOS"* || "$(cat /etc/issue)" == *"Fedora"* || "$(cat /etc/issue)" == *"OpenSUSE"* ]]; then
+    OS="RedHat"
+  fi
 }
 
-######################################################################
-### check sudo or root perms ###
+######################################################
+### Function to Check for sudo or root permissions ###
 function RootorUser {
+	# Get the current user's name
 	Name=$(whoami)
-	printf "${Yellow}Hello '${Green}$Name${Yellow}' We will test if you have sudo or root permissions${ResetColor}\n"
+	# Print a message to indicate that the script is checking for sudo or root permissions
+	printf "👋 ${Green}'$Name' ${Blue}We will test if you have sudo or root permissions.${ResetColor}\n"
+	# Check if the current user is not root
 	if [ "$Name" != "root" ]; then
-			if ! sudo -l; then
-			printf "${Red}'$Name' Is not a sudoers account${ResetColor}\n"
-			printf "${Red}Please logged in on a root or admin account and restart the script '$0'${ResetColor}\n"
+		# Check if the user has sudo privileges
+		if ! sudo -l; then
+			# If the user does not have sudo privileges, print an error message and exit the script
+			printf "${Red}🚫 '$Name' ${Blue}Is not a sudoers account.${ResetColor}\n"
+			printf "${Red}Please log in as a root or admin account and restart the script '$0'!${ResetColor}\n"
 			exit 1
-			    else
-				printf "${Green}'$Name' Is a sudoers account${ResetColor}\n"
-			    fi
+		else
+			# If the user has sudo privileges, print a success message
+			printf "${Green}✅ '$Name' ${Blue}Is a sudoers account.${ResetColor}\n"
+		fi
 	else
-	printf "${Green}'$Name' Is a good account${ResetColor}\n"
+		# If the user is root, print a success message
+		printf "${Green}✅ '$Name' ${Blue}Is a good account.${ResetColor}\n"
 	fi
 }
 
-######################################################################
-### create configure dir | default in current user .ssha ###
+################################################################
+### Function to configure directory and file for the program ###
 function ConfigDir {
-printf "${Blue}The script is installing the program, please wating...${ResetColor}\n"
-
-Config_Dir=~/.ssha
-if [ -d $Config_Dir ]; then
-printf "${Green}$Config_Dir Folder exist.${ResetColor}\n"
-else
-printf "${Green}$Config_Dir Folder does not exist, go to create directory.${ResetColor}\n"
-sudo mkdir ~/.ssha
-fi
-
-printf "${Green}Set permissions to $Config_Dir folder.${ResetColor}\n"
-sudo chmod -R 700 $Config_Dir
-sudo chown -R "$(whoami)" $Config_Dir
-
-localFile=~/.ssha/0_localhost.ini
-if [ -f $localFile ]; then
-printf "${Green}$localFile Exist.${ResetColor}\n"
-sudo rm "$localFile"
-printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > ~/.ssha/0_localhost.ini
-sudo chmod 700 ~/.ssha/0_localhost.ini
-sudo chown "$(whoami)" ~/.ssha/0_localhost.ini
-else
-printf "${Green}$localFile Does not exist, go to create file.${ResetColor}\n"
-printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > ~/.ssha/0_localhost.ini
-sudo chmod 700 ~/.ssha/0_localhost.ini
-sudo chown "$(whoami)" ~/.ssha/0_localhost.ini
-fi
+  # Set the configuration directory
+  Config_Dir=~/.ssha
+  # Check if configuration directory exists
+  if [ -d $Config_Dir ]; then
+    printf "${Green}🗂️ '$Config_Dir' ${Blue}Folder exist.${ResetColor}\n"
+  else
+    # Create configuration directory if it doesn't exist
+    printf "${Yellow}🗂️ '$Config_Dir' ${Blue}Folder does not exist, creating directory.${ResetColor}\n"
+    sudo mkdir $Config_Dir
+  fi
+  sudo chmod -R 700 $Config_Dir
+  sudo chown -R "$(whoami)" $Config_Dir
+  # Set the configuration file for localhost
+  localFile=$Config_Dir/0_localhost.ini
+  if [ -f $localFile ]; then
+    # If configuration file exists, remove it and create a new one
+    printf "${Green}📄 '$localFile' ${Blue}Exist.${ResetColor}\n"
+    sudo rm "$localFile"
+  else
+    # If configuration file doesn't exist, create a new one
+    printf "${Yellow}📄 '$localFile' ${Blue}Does not exist, creating file.${ResetColor}\n"
+  fi
+  printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > $localFile
+  sudo chmod -R 700 $Config_Dir
+  sudo chown -R "$(whoami)" $Config_Dir
 }
 
-######################################################################
-### check dependencies ###
-# for debian
+########################################################################################
+### Functions for Operating system specific dependency check and installation script ###
+# CheckDependencies_Debian function for Debian-based systems
 function CheckDependencies_Debian {
-printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
-printf "${Green}Test of existing binaries (expect,curl) and installation of this one if they are not installed...${ResetColor}\n"
-type expect >/dev/null 2>&1 || sudo apt-get install expect -y
-type curl >/dev/null 2>&1 || sudo apt-get install curl -y
+    # Print OS information
+    printf "${Blue}⇢ This machine works with OS based on ${Green}'$OS'${ResetColor}\n"
+    # Print message for testing and installing dependencies
+    printf "${Blue}↪ Testing existing binaries (expect, wget) and installing missing ones...${ResetColor}\n"
+    # Check for and install expect and wget
+    type expect >/dev/null 2>&1 || sudo apt-get install expect -y
+    type wget >/dev/null 2>&1 || sudo apt-get install wget -y
 }
-# for macos
+# CheckDependencies_MacOS function for MacOS
 function CheckDependencies_MacOS {
-printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
-printf "${Green}Test of existing binaries (expect,curl) and installation of this one if they are not installed...${ResetColor}\n"
-if ! type expect >/dev/null 2>&1 || ! type curl >/dev/null 2>&1; then
-# download and configure brew
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-sudo chown -R "$(whoami)" /usr/local/bin
-sudo chmod u+w /usr/local/bin
-brew update --auto-update
-brew upgrade
-# download and install bin
-type expect >/dev/null 2>&1 || brew install expect
-type curl >/dev/null 2>&1 || brew install curl
-fi
+    # Print OS information
+    printf "${Blue}⇢ This machine works with OS based on ${Green}'$OS'${ResetColor}\n"
+    # Print message for testing and installing dependencies
+    printf "${Blue}↪ Testing existing binaries (expect, curl) and installing missing ones...${ResetColor}\n"
+    # Checking if the expect and curl commands are available, else install brew with expect, curl and wget
+    type expect >/dev/null 2>&1 && type curl >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    if type brew >/dev/null 2>&1; then
+        # Set permissions for /usr/local/bin
+        sudo chown -R "$(whoami)" /usr/local/bin
+        sudo chmod u+w /usr/local/bin
+        # Update and upgrade brew and install expect and wget
+        brew update --auto-update
+        brew upgrade
+        type expect >/dev/null 2>&1 || brew install expect
+        type curl >/dev/null 2>&1 || brew install curl
+        type wget >/dev/null 2>&1 || brew install wget
+    fi
 }
-# for redhat
+# CheckDependencies_RedHat function for RedHat-based systems
 function CheckDependencies_RedHat {
-printf "${Yellow}This machine works with OS based on ${Green}$OS${ResetColor}\n"
-printf "${Green}Test of existing binaries (expect,curl) and installation of this one if they are not installed...${ResetColor}\n"
-type expect >/dev/null 2>&1 || sudo yum install expect -y
-type curl >/dev/null 2>&1 || sudo yum install curl -y
+    # Print OS information
+    printf "${Blue}⇢ This machine works with OS based on ${Green}'$OS'${ResetColor}\n"
+    # Print message for testing and installing dependencies
+    printf "${Blue}↪ Testing existing binaries (expect, wget) and installing missing ones...${ResetColor}\n"
+    # Check for and install expect and wget
+    type expect >/dev/null 2>&1 || sudo yum install expect -y
+    type wget >/dev/null 2>&1 || sudo yum install wget -y
 }
 
-######################################################################
-### install bin & run ###
-function InstallBIN {
-Bin="/usr/local/bin/ssha"
-if [ -f $Bin ]; then
-printf "${Yellow}$Bin Exist. Go delete old version!${ResetColor}\n" && sudo rm /usr/local/bin/ssha
-fi
-printf "${Green}Installing the SSHA binary.${ResetColor}\n"
-sudo curl -o /usr/local/bin/ssha https://raw.githubusercontent.com/o-GuGus/sshAutoLogin/master/ssha
-sudo chmod a+x /usr/local/bin/ssha
-printf "${Green}███████╗███╗   ██╗     ██╗ ██████╗ ██╗   ██╗    ███████╗███████╗██╗  ██╗ █████╗ 
+#########################################################################
+### Function for installation of SSHA binary with output confirmation ###
+# Install and run the SSHA binary
+function InstallBin {
+  Bin="/usr/local/bin/ssha"
+  # Check if the binary exists and remove it if it does
+  if [ -f $Bin ]; then
+    printf "${Yellow}'$Bin' ${Blue}Exist. Go delete old version!${ResetColor}\n" && sudo rm /usr/local/bin/ssha
+  fi
+  # Download and install the SSHA binary
+  printf "${Blue}Installing the SSHA binary.${ResetColor}\n"
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+    sudo curl -o /usr/local/bin/ssha https://raw.githubusercontent.com/o-GuGus/sshAutoLogin/master/ssha
+    else 
+    sudo wget -O /usr/local/bin/ssha https://raw.githubusercontent.com/o-GuGus/sshAutoLogin/master/ssha
+    fi
+  sudo chmod a+x /usr/local/bin/ssha
+  # Print the SSHA logo and display the help menu
+  printf "${Green}███████╗███╗   ██╗     ██╗ ██████╗ ██╗   ██╗    ███████╗███████╗██╗  ██╗ █████╗ 
 ██╔════╝████╗  ██║     ██║██╔═══██╗╚██╗ ██╔╝    ██╔════╝██╔════╝██║  ██║██╔══██╗
 █████╗  ██╔██╗ ██║     ██║██║   ██║ ╚████╔╝     ███████╗███████╗███████║███████║
 ██╔══╝  ██║╚██╗██║██   ██║██║   ██║  ╚██╔╝      ╚════██║╚════██║██╔══██║██╔══██║
 ███████╗██║ ╚████║╚█████╔╝╚██████╔╝   ██║       ███████║███████║██║  ██║██║  ██║
 ╚══════╝╚═╝  ╚═══╝ ╚════╝  ╚═════╝    ╚═╝       ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝${ResetColor}\n"
-/usr/local/bin/ssha -h
+  /usr/local/bin/ssha -h
 }
 
 ######################################################################
 # SCRIPT OF INSTALL START HERE #
-BANNER1
-BANNER2
+Banner
 DetectOS
 RootorUser
 ConfigDir
 CheckDependencies_$OS
-InstallBIN
+InstallBin
