@@ -136,6 +136,7 @@ function CheckDependencies_MacOS {
     # Checking if the expect and curl commands are available, else install brew with expect, curl and wget
     type expect >/dev/null 2>&1 && type curl >/dev/null 2>&1 || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     if type brew >/dev/null 2>&1; then
+		printf "${Blue}🍺 brew is installed on your system, we will update it...${ResetColor}\n"
         # Set permissions for /usr/local/bin
         sudo chown -R "$(whoami)" /usr/local/bin
         sudo chmod u+w /usr/local/bin
