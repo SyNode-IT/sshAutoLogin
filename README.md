@@ -1,7 +1,8 @@
 
 # SSH Auto Login
 ![ssha -s 2](https://github.com/o-GuGus/sshAutoLogin/blob/master/images/ssha%20-s%202.jpg)
-The 'ssha' tool is a handy tool to quickly connect to a remote server via SSH without having to enter your password each time. It stores your server credentials in a secure configuration file on your local computer and uses them to automatically connect to the remote server.
+
+**The 'ssha' tool is a handy tool to quickly connect to a remote server via SSH without having to enter your password each time. It stores your server credentials in a secure configuration file on your local computer and uses them to automatically connect to the remote server.
 
 ## Features
 - Create a new server
