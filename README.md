@@ -31,6 +31,7 @@ ssha -l
 3. Connect to your selected server
 ``` bash
 ssha -s 1
+![ssha -s 2](https://github.com/o-GuGus/sshAutoLogin/blob/master/images/ssha%20-s%202.jpg?raw=true)
 ```
 
 ## Contributing
