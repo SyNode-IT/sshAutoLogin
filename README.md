@@ -22,11 +22,13 @@ The 'ssha' tool is a handy tool to quickly connect to a remote server via SSH wi
 ``` bash
 ssha -c
 ```
+![ssha -c](https://github.com/o-GuGus/sshAutoLogin/blob/master/images/ssha%20-c.png)
 
 3.  See your server list
 ``` bash
 ssha -l
 ```
+![ssha -l](https://github.com/o-GuGus/sshAutoLogin/blob/master/images/ssha%20-l.png)
 
 3. Connect to your selected server
 ``` bash
