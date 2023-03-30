@@ -1,7 +1,7 @@
 #!/bin/bash
-# Author   :    AlicFeng & GuGus
-# Email    :    a@samego.com / guillaume@guigos.com
-# Github   :    https://github.com/o-GuGus/sshAutoLogin
+# Authors   :    AlicFeng & GuGus
+# Emails    :    a@samego.com / guillaume@guigos.com
+# Githubs   :    https://github.com/alicfeng/sshAutoLogin / https://github.com/o-GuGus/sshAutoLogin
 
 # set color variables for 'printf' or 'echo'; example 'printf "${Green}"$VARIABLE" or text${ResetColor}\n"'
 Red="\e[0;31m"
