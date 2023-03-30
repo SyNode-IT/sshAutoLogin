@@ -32,7 +32,7 @@ ssha -l
 ``` bash
 ssha -s 1
 ```
-![ssha -s 2](https://github.com/o-GuGus/sshAutoLogin/blob/master/images/ssha%20-s%202.jpg?raw=true)
+![ssha -s 2](https://github.com/o-GuGus/sshAutoLogin/blob/master/images/ssha%20-s%202.jpg)
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
