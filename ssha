@@ -143,7 +143,7 @@ v5NZ8jBr2HoQYD=${server[5]}
 zodVApcRdLi4Kz=$(DPass "$v5NZ8jBr2HoQYD")
 pem="$zodVApcRdLi4Kz"
   # banner login
-  Close=1; Fit=6; bcount "$USER logging into the【${server[1]}】server" && banner "${Blue}$USER${ResetColor} ${Green}logging${ResetColor} into the${Yellow}【${server[1]}】${ResetColor}server"
+  Close=1; Fit=6; bcount "$USER logging into the【${server[1]}】server" && banner "${Cyan}$USER${ResetColor} ${Green}logging${ResetColor} into the${Yellow}【${server[1]}】${ResetColor}server"
 	command="
         expect {
                 \"*assword\" {set timeout 6000; send \"$pem\n\"; exp_continue ; sleep 3; }
@@ -166,7 +166,7 @@ pem="$zodVApcRdLi4Kz"
 	"
    fi
   # banner logout
-  Close=1; Fit=6; bcount "$USER logged out the【${server[1]}】server" && banner "${Blue}$USER${ResetColor} ${Red}logged out${ResetColor} the${Yellow}【${server[1]}】${ResetColor}server"
+  Close=1; Fit=6; bcount "$USER logged out the【${server[1]}】server" && banner "${Cyan}$USER${ResetColor} ${Red}logged out${ResetColor} the${Yellow}【${server[1]}】${ResetColor}server"
 }
 
 ##############################
@@ -200,7 +200,7 @@ if [[ "$info" =~ ^[yYoO] ]]; then
 	printf "%s\n%s\n%s\n%s\n%s\n%s\n""Index=$server_list_length" "Name=$name" "Host=$host" "Port=$port" "User=$user" "PasswordOrKey=$POK" > ~/.ssha/"$server_list_length"_"$name".conf
     chmod 700 ~/.ssha/"$server_list_length"_"$name".conf
     Close=1; Fit=4; bcount "Congratulations the server '$name' is well registered. Here is the current list of your servers:"
-    banner "${Blue}Congratulations the server${Green} '$name' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:"
+    banner "${Cyan}Congratulations the server${Green} '$name' ${Cyan}is well registered. ${ResetColor}Here is the current list of your servers:"
     ssha -l
     exit 0
 elif [[ "$info" =~ ^[nN] ]]; then
@@ -227,7 +227,7 @@ else
 printf "\n${Cyan}%s ${Green}%s ${Cyan}%s ${Cyan}%s${Green}%s${Cyan}%s${Red}%s${Cyan}%s\n" "You have selected the server" "$srvnb." "Do you really want to delete this server ?" "(" "Y" "/" "N" ")"
     read -r info
     if [[ "$info" =~ ^[yYoO] ]]; then
-    Close=1; Fit=4; bcount "'OK' Server number $srvnb is deleted" && banner "${Green}'OK' ${Blue}Server number ${Green}$srvnb ${Blue}is deleted${ResetColor}"
+    Close=1; Fit=4; bcount "'OK' Server number $srvnb is deleted" && banner "${Green}'OK' ${Cyan}Server number ${Green}$srvnb ${Cyan}is deleted${ResetColor}"
     rm ~/.ssha/"$srvnb"_*
     mkdir $DeletedFolder
     # call binary to check deleted folder and re order servers list & exit 0
