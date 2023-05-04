@@ -24,17 +24,18 @@ if [ -d $Config_Dir ];then
 				done < "$config_file"
                 server_list[${#server_list[*]}]="${Index} ${Name} ${Host} ${Port} ${User} ${PasswordOrKey}"
 		else
-			printf "${Red}Your server configuration files are not in the correct format (.ini/.conf)${ResetColor}\n" && exit 1
+		printf "${Red}%s${ResetColor}\n" "Your server configuration files are not in the correct format (.ini/.conf)"
+		exit 1
 		fi
 	done
 else
 # if the configuration folder does not exists, create folder and config file
-printf  "${Red}Your working folder '$Config_Dir' does not exist${ResetColor}\n"
-printf "${Green}Go to create directory '$Config_Dir' and set permissions${ResetColor}\n"
+printf  "${Red}%s${ResetColor}\n" "Your working folder '$Config_Dir' does not exist"
+printf "${Green}%s${ResetColor}\n" "Go to create directory '$Config_Dir' and set permissions"
 mkdir ~/.ssha
 chmod -R 700 $Config_Dir
 chown -R "$(whoami)" $Config_Dir
-printf "${Green}Go to create your first configuration '0_localhost.ini' file${ResetColor}\n"
+printf "${Green}%s${ResetColor}\n" "Go to create your first configuration '0_localhost.ini' file"
 printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > ~/.ssha/0_localhost.ini
 chmod 700 ~/.ssha/0_localhost.ini
 chown "$(whoami)" ~/.ssha/0_localhost.ini
@@ -126,8 +127,8 @@ function list() {
 # FUNCTION # usage of bin
 ##############################
 function usage() {
-printf "\n${Red}USAGE:${ResetColor}\n"
-printf "${Blue}ssha${ResetColor} [${Blue}-h${ResetColor}] [${Green}-l${ResetColor}] [${Green}-c${ResetColor}] [${Green}-d${ResetColor}] [${Green}-s <server number>${ResetColor}]\n"
+printf "\n${Red}%s${ResetColor}\n" "USAGE:"
+printf "${Cyan}%s ${Cyan}%s${Cyan}%s${Cyan}%s ${Cyan}%s${Green}%s${Cyan}%s ${Cyan}%s${Green}%s${Cyan}%s ${Cyan}%s${Green}%s${Cyan}%s ${Cyan}%s${Green}%s${Cyan}%s${ResetColor}\n" "ssha" "[" "-h" "]" "[" "-l" "]" "[" "-c" "]" "[" "-d" "]" "[" "-s <server number>" "]"
     exit 0
 }
 
@@ -172,41 +173,41 @@ pem="$zodVApcRdLi4Kz"
 # FUNCTION # create server
 ##############################
 function create() {
-printf "\n${Blue}Creating a new server:${ResetColor}\n"
-printf "${Yellow}Please type the '${Blue}Description${Yellow}' of this server:${ResetColor}\n"
+printf "\n${Cyan}%s${ResetColor}\n" "Creating a new server:"
+printf "${Yellow}%s${Cyan}%s${Yellow}%s ${ResetColor}\n" "Please type the '" "Description" "' of this server:"
 read -r name
-printf "${Yellow}Please type the '${Blue}Hostname|IP${Yellow}' of this server:${ResetColor}\n"
+printf "${Yellow}%s${Cyan}%s${Yellow}%s ${ResetColor}\n" "Please type the '" "Hostname|IP" "' of this server:"
 read -r host
-printf "${Yellow}Please type the '${Blue}Port${Yellow}' of this server:${ResetColor}\n"
+printf "${Yellow}%s${Cyan}%s${Yellow}%s ${ResetColor}\n" "Please type the '" "Port" "' of this server:"
 read -r port
-printf "${Yellow}Please type the '${Blue}Username${Yellow}' of this server:${ResetColor}\n"
+printf "${Yellow}%s${Cyan}%s${Yellow}%s ${ResetColor}\n" "Please type the '" "Username" "' of this server:"
 read -r user
-printf "${Yellow}Please type the '${Blue}Password|SecretKeyFile${Yellow}' of this server:${ResetColor}\n"
+printf "${Yellow}%s${Cyan}%s${Yellow}%s ${ResetColor}\n" "Please type the '" "Password|SecretKeyFile" "' of this server:"
 read -r pass && GPass "$name" "$pass" && unset pass && POK=$(printf '%s' "$name" | base64)
 
 # Print all data for verification #
-printf "\n${Blue}Please check the following informations:${ResetColor}\n"
-printf "${Yellow}Name of server:${Green} $name ${ResetColor}\n"
-printf "${Yellow}Hostname or IP:${Green} $host ${ResetColor}\n"
-printf "${Yellow}Port:${Green} $port ${ResetColor}\n"
-printf "${Yellow}Username:${Green} $user ${ResetColor}\n"
-printf "${Yellow}Password/Key (hidden):${Green} $pass ${ResetColor}\n"
+printf "\n${Cyan}%s${ResetColor}\n" 			"Please check the following informations:"
+printf "${Yellow}%s ${Green}%s${ResetColor}\n" 	"Name of server:" 	"$name"
+printf "${Yellow}%s ${Green}%s${ResetColor}\n" 	"Hostname or IP:" 	"$host"
+printf "${Yellow}%s ${Green}%s${ResetColor}\n" 	"Port:" 			"$port"
+printf "${Yellow}%s ${Green}%s${ResetColor}\n" 	"Username:" 		"$user"
+printf "${Yellow}%s ${Green}%s${ResetColor}\n" 	"Password/Key (hidden):" "$pass"
 
 # Informations is correct ?! #
-printf "\n${Blue}Informations is correct ?! (${Green}Y${ResetColor}/${Red}N${ResetColor})${ResetColor}\n"
+printf "\n${Cyan}%s${Green}%s${Cyan}%s${Red}%s${Cyan}%s\n" "Informations is correct ?! (" "Y" "/" "N" ")"
 read -r info
 if [[ "$info" =~ ^[yYoO] ]]; then
-	printf "Index=$server_list_length\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$POK\n" > ~/.ssha/"$server_list_length"_"$name".conf
+	printf "%s\n%s\n%s\n%s\n%s\n%s\n""Index=$server_list_length" "Name=$name" "Host=$host" "Port=$port" "User=$user" "PasswordOrKey=$POK" > ~/.ssha/"$server_list_length"_"$name".conf
     chmod 700 ~/.ssha/"$server_list_length"_"$name".conf
     Close=1; Fit=4; bcount "Congratulations the server '$name' is well registered. Here is the current list of your servers:"
     banner "${Blue}Congratulations the server${Green} '$name' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:"
     ssha -l
     exit 0
 elif [[ "$info" =~ ^[nN] ]]; then
-	printf "\n${Green}'OK' ${Blue}Go to restart creation of server${ResetColor}\n"
+printf "\n${Green}%s ${Cyan}%s${ResetColor}\n" "OK" "Go to restart creation of server"
 	ssha -c
 		else
-            printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
+            printf "\n${Red}%s ${Cyan}%s${ResetColor}\n" "INPUT ERROR" "Exit"
 	        exit 1
 fi
 }
@@ -217,13 +218,13 @@ fi
 function delete() {
 # see list of servers
 ssha -l
-printf "\n${Blue}Which server do you want to delete ? ${Yellow}(Enter the number)${ResetColor}\n"
+printf "\n${Cyan}%s ${Yellow}%s${ResetColor}\n" "Which server do you want to delete ?" "(Enter the number)"
 read -r srvnb
 if [[ ! "$srvnb" -le "$server_list_length" ]]; then
-printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
+printf "\n${Red}%s ${Cyan}%s${ResetColor}\n" "INPUT ERROR" "Exit"
 exit 1
 else
-printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you really want to delete this server ? (${Green}Y${ResetColor}/${Red}N${ResetColor})${ResetColor}\n"
+printf "\n${Cyan}%s ${Green}%s ${Cyan}%s ${Cyan}%s${Green}%s${Cyan}%s${Red}%s${Cyan}%s\n" "You have selected the server" "$srvnb." "Do you really want to delete this server ?" "(" "Y" "/" "N" ")"
     read -r info
     if [[ "$info" =~ ^[yYoO] ]]; then
     Close=1; Fit=4; bcount "'OK' Server number $srvnb is deleted" && banner "${Green}'OK' ${Blue}Server number ${Green}$srvnb ${Blue}is deleted${ResetColor}"
@@ -232,10 +233,10 @@ printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you real
     # call binary to check deleted folder and re order servers list & exit 0
     ssha
     elif [[ "$info" =~ ^[nN] ]]; then
-        printf "\n${Green}'OK' ${Blue}Go restart delete server${ResetColor}\n"
+        printf "\n${Green}%s ${Cyan}%s${ResetColor}\n" "OK" "Go restart delete server"
         ssha -d
         else
-        printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
+        printf "\n${Red}%s ${Cyan}%s${ResetColor}\n" "INPUT ERROR" "Exit"
         exit 1
     fi
 fi
