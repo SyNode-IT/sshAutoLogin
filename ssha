@@ -1,320 +1,237 @@
 #!/bin/bash
-# Authors   :    AlicFeng & GuGus
-# Emails    :    a@samego.com / guillaume@guigos.com
-# Githubs   :    https://github.com/alicfeng/sshAutoLogin / https://github.com/o-GuGus/sshAutoLogin
+# Author   :    GuGus
+# Email    :    guillaume@guigos.com
+# Github   :    https://github.com/o-GuGus/sshAutoLogin
 
-# set color variables for 'printf' or 'echo'; example 'printf "${Green}"$VARIABLE" or text${ResetColor}\n"'
-Red="\e[0;31m"
-Green="\e[0;32m"
-Yellow="\e[0;33m"
-Blue="\e[0;34m"
-ResetColor="\e[0m"
+# Définition des couleurs
+readonly Red="\e[0;31m"
+readonly Green="\e[0;32m"
+readonly Yellow="\e[0;33m"
+readonly Blue="\e[0;34m"
+readonly Cyan="\e[0;36m"
+readonly ResetColor="\e[0m"
 
-# loads the list of servers
-server_list=()
-# set the working folder
-Config_Dir=~/.ssha
-# determines if the configuration folder exists
-if [ -d $Config_Dir ];then
-	# Path of each '.ini or .conf' configuration file
-	for config_file in "$Config_Dir"/*;do 
-		if [ "${config_file##*.}"x = "ini"x ]||[ "${config_file##*.}"x = "conf"x ];then
-    			while read -r line_configure;do
-                    eval "$line_configure"
-				done < "$config_file"
-                server_list[${#server_list[*]}]="${Index} ${Name} ${Host} ${Port} ${User} ${PasswordOrKey}"
-		else
-			printf "${Red}Your server configuration files are not in the correct format (.ini/.conf)${ResetColor}\n" && exit 1
-		fi
-	done
-else
-# if the configuration folder does not exists, create folder and config file
-printf  "${Red}Your working folder '$Config_Dir' does not exist${ResetColor}\n"
-printf "${Green}Go to create directory '$Config_Dir' and set permissions${ResetColor}\n"
-mkdir ~/.ssha
-chmod -R 700 $Config_Dir
-chown -R "$(whoami)" $Config_Dir
-printf "${Green}Go to create your first configuration '0_localhost.ini' file${ResetColor}\n"
-printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > ~/.ssha/0_localhost.ini
-chmod 700 ~/.ssha/0_localhost.ini
-chown "$(whoami)" ~/.ssha/0_localhost.ini
-ssha -h
-fi
+# Configuration des dossiers
+readonly Config_Dir=~/.ssha
+readonly DeletedFolder=~/.ssha/.deleted
+readonly Config_Pass=~/.ssha/.data
 
-# number of registered servers
-server_list_length=${#server_list[*]}
+# Initialisation des tableaux
+declare -a server_list
+declare -a server_list_ordered
 
-# if server have been deleted
-DeletedFolder=~/.ssha/.deleted
-if [ -d $DeletedFolder ];then
-    # re order the servers list
-    serversNewIndex=0
-        for ((i=0;i<"$server_list_length";i++));do
-        server_data=(${server_list[$i]})
-        rm ~/.ssha/"${server_data[0]}"_"${server_data[1]}"*
-        printf "Index=$serversNewIndex\nName=${server_data[1]}\nHost=${server_data[2]}\nPort=${server_data[3]}\nUser=${server_data[4]}\nPasswordOrKey=${server_data[5]}\n" > ~/.ssha/"$serversNewIndex"_"${server_data[1]}".ini
-        chmod 700 ~/.ssha/"$serversNewIndex"_${server_data[1]}.ini
-        serversNewIndex=$((serversNewIndex + 1))
+# Fonction pour créer un fichier de configuration
+create_config_file() {
+    local file="$1"
+    local content="$2"
+    printf "%s" "$content" > "$file"
+    chmod 700 "$file"
+    chown "$(whoami)" "$file"
+}
+
+# Chargement de la liste des serveurs
+load_server_list() {
+    if [[ -d $Config_Dir ]]; then
+        for config_file in "$Config_Dir"/*.{ini,conf}; do
+            if [[ -f $config_file ]]; then
+                while IFS= read -r line; do
+                    eval "$line"
+                done < "$config_file"
+                server_list+=("$Index $Name $Host $Port $User $PasswordOrKey")
+            fi
         done
-    rmdir $DeletedFolder
-fi
-
-# re-order the list of servers in good numeric order
-concatened=""
-for ((i=0;i<"$server_list_length";i++)); do
-	IFS=" " read -r -a data <<< "${server_list[$i]}"
-	line=$(printf "\n${data[0]} ${data[1]} ${data[2]} ${data[3]} ${data[4]} ${data[5]} ")
-	concatened+="$line"
-done
-# use a regular expression to remove leading and trailing blank spaces and blank lines
-clean=$(echo "$concatened" | sed -e 's/^[ \t]*//' -e '/^$/d')
-# sort in the correct numeric order
-inGoodOrder=$(printf "$clean" | sort -V)
-# use the assignment operator to add an empty row at the end
-inGoodOrder="$inGoodOrder"$'\n'
-# re create ordered array 'server_list_ordered[@]' / "server_list_ordered[0] = Index Description Host Port Username Pass" of server 0
-while read -r line; do server_list_ordered+=("$line"); done < <(printf "$inGoodOrder")
-
-##############################
-# FUNCTION # bcount
-##############################
-bcount()
-{
-	Caract="$@"
-	NbCaract=${#Caract}
-	NbCaract=$((NbCaract +$Fit))
-}
-
-##############################
-# FUNCTION # banner
-##############################
-banner()
-{
-    if [[ $Close == 1 ]];then
-    # close middle line
-	printf "+" && printf %$NbCaract\s | tr " " "-" && printf "+\n|  "
-	printf "$@"
-	printf "  |\n+" && printf %$NbCaract\s | tr " " "-" && printf "+\n"
     else
-    # not close middle line
-	printf "+" && printf %$NbCaract\s | tr " " "-" && printf "+\n|  "
-	printf "$@"
-	printf "\n+" && printf %$NbCaract\s | tr " " "-" && printf "+\n"
+        printf "${Red}Le dossier de travail '$Config_Dir' n'existe pas${ResetColor}\n"
+        printf "${Green}Création du dossier '$Config_Dir' et configuration des permissions${ResetColor}\n"
+        mkdir -p "$Config_Dir"
+        chmod -R 700 "$Config_Dir"
+        chown -R "$(whoami)" "$Config_Dir"
+        create_config_file "$Config_Dir/0_localhost.ini" "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n"
+        ssha -h
     fi
 }
 
-##############################
-# FUNCTION # list servers
-##############################
-function list() {
-# print banner of array
-Close=1; Fit=20; bcount "Index\tDescription\tHost\tPort\tUsername\tPass|SecretKFile" && banner "${Red}Index\t${Green}Description\t${Blue}Host\tPort\tUsername\tPass|SecKFile${ResetColor}"
-for ((i=0;i<"$server_list_length";i++)); do
-	# set space as internal separator and fill the "server" array with each separated value / {server[0]}=Index / {server[1]}=Description ...
-	IFS=' ' read -r -a server <<< "${server_list_ordered[$i]}"
-	# print to screen
-    Close=0; banner "${Red}"$i"${ResetColor}\t${Green}${server[1]}${ResetColor}\t${server[2]}\t${server[3]}\t${server[4]}\t${server[5]}"
-done
-exit 0
+# Fonction pour réorganiser la liste des serveurs
+reorder_server_list() {
+    local concatened=""
+    for ((i=0; i<${#server_list[@]}; i++)); do
+        IFS=" " read -ra data <<< "${server_list[$i]}"
+        concatened+="${data[0]} ${data[1]} ${data[2]} ${data[3]} ${data[4]} ${data[5]}\n"
+    done
+    local clean
+    clean=$(printf "%s" "$concatened" | sed -e 's/^[ \t]*//' -e '/^$/d' | sort -V)
+    while IFS= read -r line; do
+        server_list_ordered+=("$line")
+    done <<< "$clean"
 }
 
-##############################
-# FUNCTION # usage of bin
-##############################
-function usage() {
-printf "\n${Red}USAGE:${ResetColor}\n"
-printf "${Blue}ssha${ResetColor} [${Blue}-h${ResetColor}] [${Green}-l${ResetColor}] [${Green}-c${ResetColor}] [${Green}-d${ResetColor}] [${Green}-s <server number>${ResetColor}]\n"
-    exit 0
+# Fonction pour afficher la bannière
+banner() {
+    local message="$1"
+    local width=$((${#message} + 4))
+    printf "+%${width}s+\n" | tr " " "-"
+    printf "| %s |\n" "$message"
+    printf "+%${width}s+\n" | tr " " "-"
 }
 
-##############################
-# FUNCTION # login to server
-##############################
-function login() {
-# set space as internal separator and fill the "server" array with each separated value / {server[0]}=Index / {server[1]}=Description ...
-IFS=' ' read -r -a server <<< "${server_list_ordered[$@]}"
-# set var
-v5NZ8jBr2HoQYD=${server[5]}
-zodVApcRdLi4Kz=$(DPass "$v5NZ8jBr2HoQYD")
-pem="$zodVApcRdLi4Kz"
-  # banner login
-  Close=1; Fit=6; bcount "$USER logging into the【${server[1]}】server" && banner "${Blue}$USER${ResetColor} ${Green}logging${ResetColor} into the${Yellow}【${server[1]}】${ResetColor}server"
-	command="
+# Fonction pour lister les serveurs
+list_servers() {
+    printf "| %-5s | %-15s | %-15s | %-5s | %-15s | %-15s |\n" "Index" "Description" "Host/IP" "Port" "Username" "Pass|SecKFile"
+    printf "|%s|%s|%s|%s|%s|%s|\n" "$(printf '%.7s' ========)" "$(printf '%.17s' ==================)" "$(printf '%.17s' ==================)" "$(printf '%.7s' ========)" "$(printf '%.17s' ==================)" "$(printf '%.17s' ==================)"
+    for ((i=0; i<${#server_list_ordered[@]}; i++)); do
+        IFS=' ' read -ra server <<< "${server_list_ordered[$i]}"
+        printf "| ${Red}%-5s${ResetColor} | ${Green}%-15s${ResetColor} | %-15s | %-5s | %-15s | %-15s |\n" "$i" "${server[1]}" "${server[2]}" "${server[3]}" "${server[4]}" "${server[5]}"
+    done
+    printf "|%s|%s|%s|%s|%s|%s|\n" "$(printf '%.7s' ========)" "$(printf '%.17s' ==================)" "$(printf '%.17s' ==================)" "$(printf '%.7s' ========)" "$(printf '%.17s' ==================)" "$(printf '%.17s' ==================)"
+}
+
+# Fonction pour se connecter à un serveur
+login_server() {
+    local server_index="$1"
+    IFS=' ' read -ra server <<< "${server_list_ordered[$server_index]}"
+    local password
+    password=$(decrypt_password "${server[5]}")
+    
+    banner "${Cyan}$USER${ResetColor} ${Green}se connecte${ResetColor} au serveur ${Yellow}【${server[1]}】${ResetColor}"
+    
+    expect -c "
+        spawn ssh -p ${server[3]} ${server[4]}@${server[2]}
         expect {
-                \"*assword\" {set timeout 6000; send \"$pem\n\"; exp_continue ; sleep 3; }
-                \"*passphrase\" {set timeout 6000; send \"$pem\r\n\"; exp_continue ; sleep 3; }
-                \"yes/no\" {send \"yes\n\"; exp_continue;}
-                \"Last*\" {  send_user \"\nsuccessfully logined 【${server[1]}】\n\";}
+            \"*assword\" { send \"$password\r\"; exp_continue }
+            \"*passphrase\" { send \"$password\r\"; exp_continue }
+            \"yes/no\" { send \"yes\r\"; exp_continue }
+            \"Last*\" { send_user \"\nConnexion réussie à 【${server[1]}】\n\" }
         }
-       interact
-    ";
-   if [ -f "$pem" ]
-   then
-	expect -c "
-		spawn ssh -p ${server[3]} -i $pem ${server[4]}@${server[2]}
-		${command}
-	"
-   else
-	expect -c "
-		spawn ssh -p ${server[3]} ${server[4]}@${server[2]}
-		${command}
-	"
-   fi
-  # banner logout
-  Close=1; Fit=6; bcount "$USER logged out the【${server[1]}】server" && banner "${Blue}$USER${ResetColor} ${Red}logged out${ResetColor} the${Yellow}【${server[1]}】${ResetColor}server"
+        interact
+    "
+    
+    banner "${Cyan}$USER${ResetColor} ${Red}s'est déconnecté${ResetColor} du serveur ${Yellow}【${server[1]}】${ResetColor}"
 }
 
-##############################
-# FUNCTION # create server
-##############################
-function create() {
-printf "\n${Blue}Creating a new server:${ResetColor}\n"
-printf "${Yellow}Please type the '${Blue}Description${Yellow}' of this server:${ResetColor}\n"
-read -r name
-printf "${Yellow}Please type the '${Blue}Hostname|IP${Yellow}' of this server:${ResetColor}\n"
-read -r host
-printf "${Yellow}Please type the '${Blue}Port${Yellow}' of this server:${ResetColor}\n"
-read -r port
-printf "${Yellow}Please type the '${Blue}Username${Yellow}' of this server:${ResetColor}\n"
-read -r user
-printf "${Yellow}Please type the '${Blue}Password|SecretKeyFile${Yellow}' of this server:${ResetColor}\n"
-read -r pass && GPass "$name" "$pass" && unset pass && POK=$(printf '%s' "$name" | base64)
-
-# Print all data for verification #
-printf "\n${Blue}Please check the following informations:${ResetColor}\n"
-printf "${Yellow}Name of server:${Green} $name ${ResetColor}\n"
-printf "${Yellow}Hostname or IP:${Green} $host ${ResetColor}\n"
-printf "${Yellow}Port:${Green} $port ${ResetColor}\n"
-printf "${Yellow}Username:${Green} $user ${ResetColor}\n"
-printf "${Yellow}Password/Key (hidden):${Green} $pass ${ResetColor}\n"
-
-# Informations is correct ?! #
-printf "\n${Blue}Informations is correct ?! (${Green}Y${ResetColor}/${Red}N${ResetColor})${ResetColor}\n"
-read -r info
-if [[ "$info" =~ ^[yYoO] ]]; then
-	printf "Index=$server_list_length\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$POK\n" > ~/.ssha/"$server_list_length"_"$name".conf
-    chmod 700 ~/.ssha/"$server_list_length"_"$name".conf
-    Close=1; Fit=4; bcount "Congratulations the server '$name' is well registered. Here is the current list of your servers:"
-    banner "${Blue}Congratulations the server${Green} '$name' ${Blue}is well registered. ${ResetColor}Here is the current list of your servers:"
-    ssha -l
-    exit 0
-elif [[ "$info" =~ ^[nN] ]]; then
-	printf "\n${Green}'OK' ${Blue}Go to restart creation of server${ResetColor}\n"
-	ssha -c
-		else
-            printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
-	        exit 1
-fi
-}
-
-##############################
-# FUNCTION # delete server
-##############################
-function delete() {
-# see list of servers
-ssha -l
-printf "\n${Blue}Which server do you want to delete ? ${Yellow}(Enter the number)${ResetColor}\n"
-read -r srvnb
-if [[ ! "$srvnb" -le "$server_list_length" ]]; then
-printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
-exit 1
-else
-printf "\n${Blue}You have selected the server ${Green}$srvnb${Blue}. Do you really want to delete this server ? (${Green}Y${ResetColor}/${Red}N${ResetColor})${ResetColor}\n"
-    read -r info
-    if [[ "$info" =~ ^[yYoO] ]]; then
-    Close=1; Fit=4; bcount "'OK' Server number $srvnb is deleted" && banner "${Green}'OK' ${Blue}Server number ${Green}$srvnb ${Blue}is deleted${ResetColor}"
-    rm ~/.ssha/"$srvnb"_*
-    mkdir $DeletedFolder
-    # call binary to check deleted folder and re order servers list & exit 0
-    ssha
-    elif [[ "$info" =~ ^[nN] ]]; then
-        printf "\n${Green}'OK' ${Blue}Go restart delete server${ResetColor}\n"
-        ssha -d
-        else
-        printf "\n${Red}'INPUT ERROR' ${Blue}Exit${ResetColor}\n"
-        exit 1
+# Fonction pour créer un nouveau serveur
+create_server() {
+    printf "\n${Cyan}Création d'un nouveau serveur :${ResetColor}\n"
+    read -rp "Description du serveur : " name
+    read -rp "Nom d'hôte ou IP : " host
+    read -rp "Port : " port
+    read -rp "Nom d'utilisateur : " user
+    read -rsp "Mot de passe ou chemin de la clé : " pass
+    printf "\n"
+    
+    local encrypted_pass
+    encrypted_pass=$(encrypt_password "$name" "$pass")
+    
+    printf "\n${Cyan}Vérifiez les informations suivantes :${ResetColor}\n"
+    printf "${Yellow}Nom du serveur :${ResetColor} %s\n" "$name"
+    printf "${Yellow}Hôte ou IP :${ResetColor} %s\n" "$host"
+    printf "${Yellow}Port :${ResetColor} %s\n" "$port"
+    printf "${Yellow}Nom d'utilisateur :${ResetColor} %s\n" "$user"
+    printf "${Yellow}Mot de passe/Clé :${ResetColor} [caché]\n"
+    
+    read -rp "Les informations sont-elles correctes ? (O/N) " confirm
+    if [[ $confirm =~ ^[oOyY] ]]; then
+        local index=${#server_list[@]}
+        create_config_file "$Config_Dir/${index}_${name}.conf" "Index=$index\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$encrypted_pass\n"
+        printf "${Green}Le serveur '$name' a été enregistré avec succès.${ResetColor}\n"
+        load_server_list
+        list_servers
+    else
+        printf "${Yellow}Création du serveur annulée.${ResetColor}\n"
     fi
-fi
 }
 
-##############################
-# FUNCTION # GPass
-##############################
-function GPass() {
-	# Usage ~$ GPass "MACHINE_NAME" "PASS"
-	Config_Pass=~/.ssha/.data
-	if [ ! -d $Config_Pass ];then
-		mkdir $Config_Pass
-		chmod 700 $Config_Pass
-		chown "$(whoami)" $Config_Pass
-	else
-		echo "$Config_Pass Exist" > /dev/null
-	fi
-	local MACHINE_NAME="${1}"
-	local PASS="${2}"
-	local SALT=$(openssl rand -hex 8)
-	local KEY=$(openssl rand -hex 12)
-	local ENCRYPTED=$(echo "${PASS}" | /usr/bin/openssl aes-256-ctr -md sha512 -a -A -S "${SALT}" -k "${KEY}" 2>/dev/null)
-	local Base_MachineE=$(printf '%s' "$MACHINE_NAME" | base64)
-	echo "hjxmDskUozjTivCVcjTUspxAZVgrSyfYTmnXGLNBfWbijsR=${Base_MachineE}"	> $Config_Pass/."$Base_MachineE"
-	echo "HKbWCRvUMXBDZehRnXbvwZQwSrnbZakcFhJ=${ENCRYPTED}"					>> $Config_Pass/."$Base_MachineE"
-	echo "AFZKKgzyimHDfTeUowyYGeJZYdgpYZmRFukppSU=${SALT}"					>> $Config_Pass/."$Base_MachineE"
-	echo "aNHTuBTFTQEPVpdtbcYtwSHkEsQNCvf=${KEY}"							>> $Config_Pass/."$Base_MachineE"
-    chmod 700 $Config_Pass/."$Base_MachineE"
-	chown "$(whoami)" $Config_Pass/."$Base_MachineE"
+# Fonction pour supprimer un serveur
+delete_server() {
+    list_servers
+    read -rp "Quel serveur voulez-vous supprimer ? (Entrez le numéro) : " server_number
+    
+    if ((server_number >= 0 && server_number < ${#server_list_ordered[@]})); then
+        IFS=' ' read -ra server <<< "${server_list_ordered[$server_number]}"
+        read -rp "Voulez-vous vraiment supprimer le serveur ${server[1]} ? (O/N) : " confirm
+        if [[ $confirm =~ ^[oOyY] ]]; then
+            rm -f "$Config_Dir/${server_number}_${server[1]}".*
+            mkdir -p "$DeletedFolder"
+            printf "${Green}Le serveur ${server[1]} a été supprimé.${ResetColor}\n"
+            load_server_list
+            reorder_server_list
+        else
+            printf "${Yellow}Suppression annulée.${ResetColor}\n"
+        fi
+    else
+        printf "${Red}Numéro de serveur invalide.${ResetColor}\n"
+    fi
 }
 
-##############################
-# FUNCTION # DPass
-##############################
-function DPass() {
-	# Usage: ~$ DPass "MACHINE_NAME"
-	local MACHINE_NAME="${1}"
-	# loads the list of servers pass
-	server_pass=()
-	# set the working folder
-	Config_Pass=~/.ssha/.data
-	# determines if the configuration folder exists
-	if [ -d $Config_Pass ];then
-				while read -r line;do
-					eval "$line"
-				done < "$Config_Pass"/."$MACHINE_NAME"
-				server_pass[${#server_pass[*]}]="${hjxmDskUozjTivCVcjTUspxAZVgrSyfYTmnXGLNBfWbijsR} ${HKbWCRvUMXBDZehRnXbvwZQwSrnbZakcFhJ} ${AFZKKgzyimHDfTeUowyYGeJZYdgpYZmRFukppSU} ${aNHTuBTFTQEPVpdtbcYtwSHkEsQNCvf}"
-	else
-		exit 1
-	fi
-	# server pass length
-	server_pass_length=${#server_pass[*]}
-	for ((i=0;i<"$server_pass_length";i++));do
-		local SK=(${server_pass[$i]})
-		local Pass=${SK[1]}; local Salt=${SK[2]}; local Key=${SK[3]}
-		echo "${Pass}" | /usr/bin/openssl aes-256-ctr -md sha512 -d -a -A -S "$Salt" -k "$Key" 2>/dev/null
-	done
+# Fonction pour chiffrer le mot de passe
+encrypt_password() {
+    local machine_name="$1"
+    local password="$2"
+    local salt
+    salt=$(openssl rand -hex 8)
+    local key
+    key=$(openssl rand -hex 12)
+    local encrypted
+    encrypted=$(echo -n "$password" | openssl aes-256-ctr -md sha512 -a -A -S "$salt" -k "$key" 2>/dev/null)
+    local base64_machine
+    base64_machine=$(echo -n "$machine_name" | base64)
+    
+    mkdir -p "$Config_Pass"
+    chmod 700 "$Config_Pass"
+    
+    create_config_file "$Config_Pass/.$base64_machine" "machine=$base64_machine\nencrypted=$encrypted\nsalt=$salt\nkey=$key\n"
+    
+    echo "$base64_machine"
 }
 
-##############################
-# SCRIPT # get ARGS
-##############################
-while getopts hlcds: ARGS
-do
-case "$ARGS" in
-    h)
-        usage
-        ;;
-    l)
-        list
-        ;;
-    c)
-        create
-        ;;
-    d)
-        delete
-        ;;
-    s)
-        login "$OPTARG"
-        ;;
-    *)  
-        usage
-        ;;
-esac
-done
+# Fonction pour déchiffrer le mot de passe
+decrypt_password() {
+    local encoded_machine_name="$1"
+    local config_file="$Config_Pass/.$encoded_machine_name"
+    
+    if [[ -f $config_file ]]; then
+        local encrypted salt key
+        . "$config_file"
+        echo -n "$encrypted" | openssl aes-256-ctr -md sha512 -d -a -A -S "$salt" -k "$key" 2>/dev/null
+    else
+        printf "${Red}Fichier de configuration non trouvé pour $encoded_machine_name${ResetColor}\n" >&2
+        return 1
+    fi
+}
+
+# Fonction principale
+main() {
+    load_server_list
+    reorder_server_list
+
+    case "$1" in
+        -h|--help)
+            printf "Usage: ssha [-h] [-l] [-c] [-d] [-s <numéro de serveur>]\n"
+            printf "  -h, --help     Affiche cette aide\n"
+            printf "  -l, --list     Liste les serveurs\n"
+            printf "  -c, --create   Crée un nouveau serveur\n"
+            printf "  -d, --delete   Supprime un serveur\n"
+            printf "  -s <numéro>    Se connecte au serveur spécifié\n"
+            ;;
+        -l|--list)
+            list_servers
+            ;;
+        -c|--create)
+            create_server
+            ;;
+        -d|--delete)
+            delete_server
+            ;;
+        -s)
+            if [[ -n $2 && $2 =~ ^[0-9]+$ ]]; then
+                login_server "$2"
+            else
+                printf "${Red}Veuillez spécifier un numéro de serveur valide.${ResetColor}\n"
+            fi
+            ;;
+        *)
+            printf "${Red}Option non reconnue. Utilisez -h pour l'aide.${ResetColor}\n"
+            ;;
+    esac
+}
+
+main "$@"
