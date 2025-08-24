@@ -20,17 +20,18 @@ Config_Dir=~/.ssha
 # determines if the configuration folder exists
 if [ -d $Config_Dir ];then
 	# Path of each '.ini or .conf' configuration file
-	for config_file in "$Config_Dir"/*;do 
-		if [ "${config_file##*.}"x = "ini"x ]||[ "${config_file##*.}"x = "conf"x ];then
-    			while read -r line_configure;do
+        for config_file in "$Config_Dir"/*;do
+                [ -f "$config_file" ] || continue
+                if [ "${config_file##*.}"x = "ini"x ]||[ "${config_file##*.}"x = "conf"x ];then
+                        while read -r line_configure;do
                     eval "$line_configure"
-				done < "$config_file"
+                                done < "$config_file"
                 server_list[${#server_list[*]}]="${Index} ${Name} ${Host} ${Port} ${User} ${PasswordOrKey}"
-		else
-		printf "${Red}%s${ResetColor}\n" "Your server configuration files are not in the correct format (.ini/.conf)"
-		exit 1
-		fi
-	done
+                else
+                printf "${Red}%s${ResetColor}\n" "Your server configuration files are not in the correct format (.ini/.conf)"
+                exit 1
+                fi
+        done
 else
 # if the configuration folder does not exists, create folder and config file
 printf  "${Red}%s${ResetColor}\n" "Your working folder '$Config_Dir' does not exist"
