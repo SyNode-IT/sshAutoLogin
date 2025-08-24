@@ -10,6 +10,9 @@ Yellow="\e[0;33m"
 Blue="\e[0;34m"
 ResetColor="\e[0m"
 
+# detect openssl path for portability
+OPENSSL=$(command -v openssl 2>/dev/null || echo openssl)
+
 # loads the list of servers
 server_list=()
 # set the working folder
@@ -39,7 +42,8 @@ printf "${Green}%s${ResetColor}\n" "Go to create your first configuration '0_loc
 printf "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n" > ~/.ssha/0_localhost.ini
 chmod 700 ~/.ssha/0_localhost.ini
 chown "$(whoami)" ~/.ssha/0_localhost.ini
-ssha -h
+"$0" -h
+exit 0
 fi
 
 # number of registered servers
@@ -70,7 +74,7 @@ done
 # use a regular expression to remove leading and trailing blank spaces and blank lines
 clean=$(echo "$concatened" | sed -e 's/^[ \t]*//' -e '/^$/d')
 # sort in the correct numeric order
-inGoodOrder=$(printf "$clean" | sort -V)
+inGoodOrder=$(printf "$clean" | sort -n)
 # use the assignment operator to add an empty row at the end
 inGoodOrder="$inGoodOrder"$'\n'
 # re create ordered array 'server_list_ordered[@]' / "server_list_ordered[0] = Index Description Host Port Username Pass" of server 0
@@ -201,14 +205,14 @@ if [[ "$info" =~ ^[yYoO] ]]; then
     chmod 700 ~/.ssha/"$server_list_length"_"$name".conf
     Close=1; Fit=4; bcount "Congratulations the server '$name' is well registered. Here is the current list of your servers:"
     banner "${Cyan}Congratulations the server${Green} '$name' ${Cyan}is well registered. ${ResetColor}Here is the current list of your servers:"
-    ssha -l
+    "$0" -l
     exit 0
 elif [[ "$info" =~ ^[nN] ]]; then
 printf "\n${Green}%s ${Cyan}%s${ResetColor}\n" "OK" "Go to restart creation of server"
-	ssha -c
-		else
+        "$0" -c
+                else
             printf "\n${Red}%s ${Cyan}%s${ResetColor}\n" "INPUT ERROR" "Exit"
-	        exit 1
+                exit 1
 fi
 }
 
@@ -217,7 +221,7 @@ fi
 ##############################
 function delete() {
 # see list of servers
-ssha -l
+"$0" -l
 printf "\n${Cyan}%s ${Yellow}%s${ResetColor}\n" "Which server do you want to delete ?" "(Enter the number)"
 read -r srvnb
 if [[ ! "$srvnb" -le "$server_list_length" ]]; then
@@ -231,10 +235,10 @@ printf "\n${Cyan}%s ${Green}%s ${Cyan}%s ${Cyan}%s${Green}%s${Cyan}%s${Red}%s${C
     rm ~/.ssha/"$srvnb"_*
     mkdir $DeletedFolder
     # call binary to check deleted folder and re order servers list & exit 0
-    ssha
+    "$0"
     elif [[ "$info" =~ ^[nN] ]]; then
         printf "\n${Green}%s ${Cyan}%s${ResetColor}\n" "OK" "Go restart delete server"
-        ssha -d
+        "$0" -d
         else
         printf "\n${Red}%s ${Cyan}%s${ResetColor}\n" "INPUT ERROR" "Exit"
         exit 1
@@ -257,9 +261,9 @@ function GPass() {
 	fi
 	local MACHINE_NAME="${1}"
 	local PASS="${2}"
-	local SALT=$(openssl rand -hex 8)
-	local KEY=$(openssl rand -hex 12)
-	local ENCRYPTED=$(echo "${PASS}" | /usr/bin/openssl aes-256-ctr -md sha512 -a -A -S "${SALT}" -k "${KEY}" 2>/dev/null)
+        local SALT=$("$OPENSSL" rand -hex 8)
+        local KEY=$("$OPENSSL" rand -hex 12)
+        local ENCRYPTED=$(echo "${PASS}" | "$OPENSSL" aes-256-ctr -md sha512 -a -A -S "${SALT}" -k "${KEY}" 2>/dev/null)
 	local Base_MachineE=$(printf '%s' "$MACHINE_NAME" | base64)
 	echo "hjxmDskUozjTivCVcjTUspxAZVgrSyfYTmnXGLNBfWbijsR=${Base_MachineE}"	> $Config_Pass/."$Base_MachineE"
 	echo "HKbWCRvUMXBDZehRnXbvwZQwSrnbZakcFhJ=${ENCRYPTED}"					>> $Config_Pass/."$Base_MachineE"
@@ -293,7 +297,7 @@ function DPass() {
 	for ((i=0;i<"$server_pass_length";i++));do
 		local SK=(${server_pass[$i]})
 		local Pass=${SK[1]}; local Salt=${SK[2]}; local Key=${SK[3]}
-		echo "${Pass}" | /usr/bin/openssl aes-256-ctr -md sha512 -d -a -A -S "$Salt" -k "$Key" 2>/dev/null
+                echo "${Pass}" | "$OPENSSL" aes-256-ctr -md sha512 -d -a -A -S "$Salt" -k "$Key" 2>/dev/null
 	done
 }
 
