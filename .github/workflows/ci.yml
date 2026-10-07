@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  shell-tests:
+    name: Shell Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if ! command -v expect >/dev/null 2>&1; then
+            if [[ "${RUNNER_OS}" == "Linux" ]]; then
+              sudo apt-get update
+              sudo apt-get install -y expect
+            else
+              brew install expect
+            fi
+          fi
+
+          if ! command -v shellcheck >/dev/null 2>&1; then
+            if [[ "${RUNNER_OS}" == "Linux" ]]; then
+              sudo apt-get update
+              sudo apt-get install -y shellcheck
+            else
+              brew install shellcheck
+            fi
+          fi
+
+      - name: Syntax Check
+        shell: bash
+        run: |
+          bash -n ssha
+          bash -n install.sh
+          bash -n tests/verify_checksum.sh
+          bash -n tests/smoke.sh
+
+      - name: Shellcheck
+        shell: bash
+        run: |
+          shellcheck -S error -x ssha install.sh tests/verify_checksum.sh tests/smoke.sh
+
+      - name: Checksum
+        shell: bash
+        run: |
+          chmod +x tests/verify_checksum.sh
+          tests/verify_checksum.sh
+
+      - name: Smoke Tests
+        shell: bash
+        run: |
+          chmod +x tests/smoke.sh
+          tests/smoke.sh

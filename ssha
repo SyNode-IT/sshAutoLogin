@@ -1,7 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Author   :    GuGus
 # Email    :    guillaume@guigos.com
 # Github   :    https://github.com/o-GuGus/sshAutoLogin
+
+# Version
+readonly VERSION="2.1.0"
+readonly VERSION_DATE="2026-03-09"
 
 # Définition des couleurs
 readonly Red="\e[0;31m"
@@ -15,54 +19,489 @@ readonly ResetColor="\e[0m"
 readonly Config_Dir=~/.ssha
 readonly DeletedFolder=~/.ssha/.deleted
 readonly Config_Pass=~/.ssha/.data
+readonly Master_Key_File=~/.ssha/.master_key
+readonly Backup_Dir=~/.ssha/.backups
+readonly DEFAULT_KDF_ITERATIONS="200000"
+readonly LEGACY_KDF_ITERATIONS="100000"
+readonly AUTH_TYPE_PASSWORD="password"
+readonly AUTH_TYPE_KEY_FILE="key_file"
+readonly MASTER_VERIFIER_CONTEXT="ssha-master-verifier-v3"
+readonly SECRET_RECORD_CONTEXT="ssha-secret-record-v3"
 
 # Initialisation des tableaux
 declare -a server_list
 declare -a server_list_ordered
 
+# Variable pour stocker la clé maître dérivée (en mémoire uniquement)
+DERIVED_KEY=""
+DERIVED_AUTH_KEY=""
+
+# Décodage base64 portable (GNU/MacOS)
+decode_base64() {
+    local input="$1"
+    if echo -n "$input" | base64 -d >/dev/null 2>&1; then
+        echo -n "$input" | base64 -d 2>/dev/null
+    else
+        echo -n "$input" | base64 -D 2>/dev/null
+    fi
+}
+
+encode_base64() {
+    printf "%s" "$1" | base64 | tr -d '\n'
+}
+
+# Lecture d'une clé dans un fichier de config, compatible avec les anciens
+# fichiers qui stockent littéralement '\n' au lieu de vrais retours à la ligne.
+get_config_value() {
+    local config_file="$1"
+    local target_key="$2"
+    local file_content key value
+
+    [[ -f "$config_file" ]] || return 1
+
+    file_content=$(<"$config_file")
+    file_content="${file_content//\\n/$'\n'}"
+
+    while IFS='=' read -r key value; do
+        [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+        key="${key//[[:space:]]/}"
+        value="${value#"${value%%[![:space:]]*}"}"
+        value="${value%"${value##*[![:space:]]}"}"
+        if [[ "$key" == "$target_key" ]]; then
+            printf "%s" "$value"
+            return 0
+        fi
+    done <<< "$file_content"
+
+    return 1
+}
+
+# Calcul de l'index libre suivant (évite les collisions après suppressions)
+next_server_index() {
+    local max_index=-1
+    local current_index
+    local entry
+
+    for entry in "${server_list[@]}"; do
+        IFS=' ' read -r current_index _ <<< "$entry"
+        if [[ "$current_index" =~ ^[0-9]+$ ]] && (( current_index > max_index )); then
+            max_index=$current_index
+        fi
+    done
+
+    echo $((max_index + 1))
+}
+
+# Fonction pour afficher la version
+show_version() {
+    printf "SSHA - SSH Auto Login Manager\n"
+    printf "Version: ${Green}%s${ResetColor} (%s)\n" "$VERSION" "$VERSION_DATE"
+    printf "Author: GuGus <guillaume@guigos.com>\n"
+    printf "Github: https://github.com/o-GuGus/sshAutoLogin\n"
+}
+
+# Fonction pour vérifier la version d'OpenSSL et ses capacités
+check_openssl_capabilities() {
+    local openssl_version
+    openssl_version=$(openssl version 2>/dev/null)
+
+    if [[ -z "$openssl_version" ]]; then
+        printf "${Red}❌ OpenSSL n'est pas installé.${ResetColor}\n" >&2
+        return 1
+    fi
+
+    # Vérifier le support de PBKDF2
+    if ! openssl enc -aes-256-cbc -pbkdf2 -P -k "test" -S "00" 2>/dev/null | grep -q "key="; then
+        printf "${Yellow}⚠️  OpenSSL ne supporte pas PBKDF2, utilisation du mode legacy.${ResetColor}\n" >&2
+    fi
+
+    return 0
+}
+
+# Fonction de dérivation de clé compatible multi-versions OpenSSL
+derive_key() {
+    local password="$1"
+    local salt="$2"
+    local iterations="${3:-$DEFAULT_KDF_ITERATIONS}"
+    local derived=""
+
+    # Méthode 1: openssl kdf (OpenSSL 3.0+)
+    derived=$(echo -n "$password" | openssl kdf -keylen 32 -kdfopt digest:SHA256 -kdfopt pass:stdin -kdfopt salt:"$salt" -kdfopt iter:"$iterations" PBKDF2 2>/dev/null | xxd -p -c 64)
+
+    # Méthode 2: openssl enc avec PBKDF2 (OpenSSL 1.1.1+)
+    if [[ -z "$derived" ]]; then
+        derived=$(openssl enc -aes-256-cbc -pbkdf2 -iter "$iterations" -k "$password" -S "$salt" -P 2>/dev/null | grep "^key=" | cut -d'=' -f2)
+    fi
+
+    # Méthode 3: Fallback manuel avec dgst (toutes versions)
+    if [[ -z "$derived" ]]; then
+        # PBKDF2-like dérivation manuelle
+        local prev_hash=""
+        local result=""
+        for ((i=0; i<4; i++)); do
+            if [[ -z "$prev_hash" ]]; then
+                prev_hash=$(echo -n "${password}${salt}${i}" | openssl dgst -sha256 -binary | xxd -p -c 64)
+            else
+                prev_hash=$(echo -n "${prev_hash}${password}${salt}" | openssl dgst -sha256 -binary | xxd -p -c 64)
+            fi
+            result+="$prev_hash"
+        done
+        derived="${result:0:64}"
+    fi
+
+    echo "$derived"
+}
+
+sha256_hex() {
+    printf "%s" "$1" | openssl dgst -sha256 | awk '{print $NF}'
+}
+
+hmac_sha256_hex() {
+    local hex_key="$1"
+    local data="$2"
+
+    printf "%s" "$data" | openssl dgst -sha256 -mac HMAC -macopt "hexkey:$hex_key" | awk '{print $NF}'
+}
+
+derive_auth_key() {
+    sha256_hex "ssha-auth-key|$1"
+}
+
+compute_master_verifier() {
+    hmac_sha256_hex "$DERIVED_AUTH_KEY" "$MASTER_VERIFIER_CONTEXT"
+}
+
+compute_secret_mac_with_key() {
+    local auth_key="$1"
+    local machine_name="$2"
+    local auth_type="$3"
+    local iv="$4"
+    local encrypted="$5"
+
+    hmac_sha256_hex "$auth_key" "context=$SECRET_RECORD_CONTEXT|machine=$machine_name|auth_type=$auth_type|iv=$iv|encrypted=$encrypted"
+}
+
+compute_secret_mac() {
+    local machine_name="$1"
+    local auth_type="$2"
+    local iv="$3"
+    local encrypted="$4"
+
+    compute_secret_mac_with_key "$DERIVED_AUTH_KEY" "$machine_name" "$auth_type" "$iv" "$encrypted"
+}
+
+expand_user_path() {
+    local path="$1"
+
+    case "$path" in
+        "~")
+            printf "%s" "$HOME"
+            ;;
+        "~/"*)
+            printf "%s/%s" "$HOME" "${path#~/}"
+            ;;
+        *)
+            printf "%s" "$path"
+            ;;
+    esac
+}
+
+ensure_secure_directory() {
+    local dir="$1"
+    local mode="${2:-700}"
+
+    mkdir -p "$dir"
+    chmod "$mode" "$dir"
+}
+
+validate_backup_name() {
+    local backup_name="$1"
+
+    if [[ ! "$backup_name" =~ ^[A-Za-z0-9._-]{1,80}$ ]]; then
+        printf "${Red}❌ Nom de sauvegarde invalide. Utilisez uniquement lettres, chiffres, point, tiret ou underscore.${ResetColor}\n"
+        return 1
+    fi
+
+    return 0
+}
+
+persist_master_key_file() {
+    local salt="$1"
+    local iterations="$2"
+    local verifier
+
+    verifier=$(compute_master_verifier)
+    create_config_file "$Master_Key_File" "salt=$salt\niterations=$iterations\nkdf=pbkdf2-sha256\nverifier=$verifier\nversion=$VERSION\n"
+}
+
+detect_legacy_iterations() {
+    local master_pass="$1"
+    local salt="$2"
+    local authenticated_secret_file=""
+    local file
+
+    if [[ ! -d "$Config_Pass" ]]; then
+        printf "%s" "$LEGACY_KDF_ITERATIONS"
+        return 0
+    fi
+
+    while IFS= read -r -d '' file; do
+        if grep -q "^mac=" "$file" 2>/dev/null; then
+            authenticated_secret_file="$file"
+            break
+        fi
+    done < <(find "$Config_Pass" -name ".*" -type f -print0 2>/dev/null)
+
+    if [[ -z "$authenticated_secret_file" ]]; then
+        printf "%s" "$LEGACY_KDF_ITERATIONS"
+        return 0
+    fi
+
+    local encoded_machine_name auth_type iv encrypted stored_mac candidate candidate_key candidate_auth_key candidate_mac
+    encoded_machine_name=$(get_config_value "$authenticated_secret_file" "machine")
+    auth_type=$(get_config_value "$authenticated_secret_file" "auth_type")
+    iv=$(get_config_value "$authenticated_secret_file" "iv")
+    encrypted=$(get_config_value "$authenticated_secret_file" "encrypted")
+    stored_mac=$(get_config_value "$authenticated_secret_file" "mac")
+    auth_type="${auth_type:-$AUTH_TYPE_PASSWORD}"
+
+    for candidate in "$LEGACY_KDF_ITERATIONS" "$DEFAULT_KDF_ITERATIONS"; do
+        candidate_key=$(derive_key "$master_pass" "$salt" "$candidate")
+        candidate_auth_key=$(derive_auth_key "$candidate_key")
+        candidate_mac=$(compute_secret_mac_with_key "$candidate_auth_key" "$encoded_machine_name" "$auth_type" "$iv" "$encrypted")
+        if [[ "$candidate_mac" == "$stored_mac" ]]; then
+            printf "%s" "$candidate"
+            return 0
+        fi
+    done
+
+    printf "%s" "$LEGACY_KDF_ITERATIONS"
+}
+
+validate_restore_archive() {
+    local backup_file="$1"
+    local archive_listing
+    local archive_entry
+
+    archive_listing=$(tar -tzf "$backup_file" 2>/dev/null) || {
+        printf "${Red}❌ Impossible de lire l'archive de sauvegarde.${ResetColor}\n"
+        return 1
+    }
+
+    while IFS= read -r archive_entry; do
+        [[ -z "$archive_entry" || "$archive_entry" == "." ]] && continue
+        archive_entry="${archive_entry#./}"
+
+        if [[ "$archive_entry" == /* || "$archive_entry" == ".." || "$archive_entry" == *"/../"* || "$archive_entry" == ../* ]]; then
+            printf "${Red}❌ Archive invalide: entrée dangereuse détectée (%s).${ResetColor}\n" "$archive_entry"
+            return 1
+        fi
+    done <<< "$archive_listing"
+
+    return 0
+}
+
+# Fonctions de validation des entrées
+validate_server_name() {
+    local name="$1"
+    if [[ -z "$name" ]]; then
+        printf "${Red}❌ Le nom du serveur ne peut pas être vide.${ResetColor}\n"
+        return 1
+    fi
+    if [[ ${#name} -gt 50 ]]; then
+        printf "${Red}❌ Le nom du serveur ne peut pas dépasser 50 caractères.${ResetColor}\n"
+        return 1
+    fi
+    if [[ "$name" =~ [[:space:]] ]]; then
+        printf "${Red}❌ Le nom du serveur ne peut pas contenir d'espaces.${ResetColor}\n"
+        return 1
+    fi
+    if [[ "$name" =~ [/\\] ]]; then
+        printf "${Red}❌ Le nom du serveur ne peut pas contenir / ou \\.${ResetColor}\n"
+        return 1
+    fi
+    return 0
+}
+
+validate_host() {
+    local host="$1"
+    if [[ -z "$host" ]]; then
+        printf "${Red}❌ L'hôte ne peut pas être vide.${ResetColor}\n"
+        return 1
+    fi
+    # Validation basique: IP ou hostname
+    if [[ ! "$host" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+        printf "${Red}❌ L'hôte contient des caractères invalides.${ResetColor}\n"
+        return 1
+    fi
+    return 0
+}
+
+validate_port() {
+    local port="$1"
+    if [[ -z "$port" ]]; then
+        printf "${Red}❌ Le port ne peut pas être vide.${ResetColor}\n"
+        return 1
+    fi
+    if [[ ! "$port" =~ ^[0-9]+$ ]]; then
+        printf "${Red}❌ Le port doit être un nombre.${ResetColor}\n"
+        return 1
+    fi
+    if ((port < 1 || port > 65535)); then
+        printf "${Red}❌ Le port doit être entre 1 et 65535.${ResetColor}\n"
+        return 1
+    fi
+    return 0
+}
+
+validate_username() {
+    local user="$1"
+    if [[ -z "$user" ]]; then
+        printf "${Red}❌ Le nom d'utilisateur ne peut pas être vide.${ResetColor}\n"
+        return 1
+    fi
+    if [[ ${#user} -gt 32 ]]; then
+        printf "${Red}❌ Le nom d'utilisateur ne peut pas dépasser 32 caractères.${ResetColor}\n"
+        return 1
+    fi
+    if [[ "$user" =~ [[:space:]] ]]; then
+        printf "${Red}❌ Le nom d'utilisateur ne peut pas contenir d'espaces.${ResetColor}\n"
+        return 1
+    fi
+    if [[ ! "$user" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+        printf "${Red}❌ Le nom d'utilisateur contient des caractères invalides.${ResetColor}\n"
+        return 1
+    fi
+    return 0
+}
+
+validate_password() {
+    local pass="$1"
+    if [[ -z "$pass" ]]; then
+        printf "${Red}❌ Le mot de passe ne peut pas être vide.${ResetColor}\n"
+        return 1
+    fi
+    return 0
+}
+
+validate_key_path() {
+    local key_path="$1"
+
+    if [[ -z "$key_path" ]]; then
+        printf "${Red}❌ Le chemin de la clé ne peut pas être vide.${ResetColor}\n"
+        return 1
+    fi
+
+    if [[ ! -f "$key_path" ]]; then
+        printf "${Red}❌ Fichier de clé introuvable : %s${ResetColor}\n" "$key_path"
+        return 1
+    fi
+
+    if [[ ! -r "$key_path" ]]; then
+        printf "${Red}❌ Fichier de clé illisible : %s${ResetColor}\n" "$key_path"
+        return 1
+    fi
+
+    return 0
+}
+
 # Fonction pour créer un fichier de configuration
 create_config_file() {
     local file="$1"
     local content="$2"
+
+    # Compatibilité: convertir les séquences '\n' en vrais retours à la ligne.
+    content="${content//\\n/$'\n'}"
+
+    mkdir -p "$(dirname "$file")"
     printf "%s" "$content" > "$file"
-    chmod 700 "$file"
-    chown "$(whoami)" "$file"
+    chmod 600 "$file"
+}
+
+# Fonction de parsing sécurisé des fichiers de configuration (remplace eval)
+parse_config_file() {
+    local config_file="$1"
+    local file_content
+    Index="" Name="" Host="" Port="" User="" AuthType="$AUTH_TYPE_PASSWORD" PasswordOrKey=""
+
+    [[ -f "$config_file" ]] || return 1
+
+    # Support des anciens fichiers écrits sur une seule ligne avec '\n' littéral.
+    file_content=$(<"$config_file")
+    file_content="${file_content//\\n/$'\n'}"
+
+    while IFS='=' read -r key value; do
+        # Ignorer les lignes vides et les commentaires
+        [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+        # Nettoyer les espaces
+        key="${key//[[:space:]]/}"
+        value="${value#"${value%%[![:space:]]*}"}"
+        value="${value%"${value##*[![:space:]]}"}"
+
+        case "$key" in
+            Index) Index="$value" ;;
+            Name) Name="$value" ;;
+            Host) Host="$value" ;;
+            Port) Port="$value" ;;
+            User) User="$value" ;;
+            AuthType) AuthType="$value" ;;
+            PasswordOrKey) PasswordOrKey="$value" ;;
+            *) ;; # Ignorer les clés inconnues
+        esac
+    done <<< "$file_content"
 }
 
 # Chargement de la liste des serveurs
 load_server_list() {
-    if [[ -d $Config_Dir ]]; then
-        for config_file in "$Config_Dir"/*.{ini,conf}; do
-            if [[ -f $config_file ]]; then
-                while IFS= read -r line; do
-                    eval "$line"
-                done < "$config_file"
-                server_list+=("$Index $Name $Host $Port $User $PasswordOrKey")
-            fi
-        done
-    else
-        printf "${Red}Le dossier de travail '$Config_Dir' n'existe pas${ResetColor}\n"
-        printf "${Green}Création du dossier '$Config_Dir' et configuration des permissions${ResetColor}\n"
-        mkdir -p "$Config_Dir"
-        chmod -R 700 "$Config_Dir"
-        chown -R "$(whoami)" "$Config_Dir"
-        create_config_file "$Config_Dir/0_localhost.ini" "Index=0\nName=localhost\nHost=127.0.0.1\nPort=22\nUser=root\nPasswordOrKey=password\n"
-        ssha -h
+    local config_file
+    local has_invalid_files=false
+
+    # Réinitialiser les tableaux
+    server_list=()
+    server_list_ordered=()
+
+    if [[ ! -d "$Config_Dir" ]]; then
+        printf "${Yellow}Le dossier de travail '%s' n'existe pas.${ResetColor}\n" "$Config_Dir"
+        printf "${Green}Création du dossier '%s'.${ResetColor}\n" "$Config_Dir"
+        ensure_secure_directory "$Config_Dir" 700
+        return 0
+    fi
+
+    shopt -s nullglob
+    for config_file in "$Config_Dir"/*.ini "$Config_Dir"/*.conf; do
+        [[ -f "$config_file" ]] || continue
+        parse_config_file "$config_file"
+        if [[ "$AuthType" != "$AUTH_TYPE_PASSWORD" && "$AuthType" != "$AUTH_TYPE_KEY_FILE" ]]; then
+            AuthType="$AUTH_TYPE_PASSWORD"
+        fi
+        if [[ -n "$Index" && -n "$Name" && -n "$Host" && -n "$Port" && -n "$User" && -n "$PasswordOrKey" ]]; then
+            server_list+=("$Index $Name $Host $Port $User $AuthType $PasswordOrKey")
+        else
+            has_invalid_files=true
+            printf "${Yellow}⚠️  Fichier ignoré (format invalide) : %s${ResetColor}\n" "$config_file"
+        fi
+    done
+    shopt -u nullglob
+
+    if [[ "$has_invalid_files" == true ]]; then
+        printf "${Yellow}⚠️  Corrigez ou recréez les fichiers de configuration invalides.${ResetColor}\n"
     fi
 }
 
 # Fonction pour réorganiser la liste des serveurs
 reorder_server_list() {
-    local concatened=""
-    for ((i=0; i<${#server_list[@]}; i++)); do
-        IFS=" " read -ra data <<< "${server_list[$i]}"
-        concatened+="${data[0]} ${data[1]} ${data[2]} ${data[3]} ${data[4]} ${data[5]}\n"
-    done
-    local clean
-    clean=$(printf "%s" "$concatened" | sed -e 's/^[ \t]*//' -e '/^$/d' | sort -V)
+    server_list_ordered=()
+    local sorted
+    local line
+
+    if [[ ${#server_list[@]} -eq 0 ]]; then
+        return 0
+    fi
+
+    sorted=$(printf "%s\n" "${server_list[@]}" | sed -e '/^[ \t]*$/d' | sort -n -k1,1)
     while IFS= read -r line; do
-        server_list_ordered+=("$line")
-    done <<< "$clean"
+        [[ -n "$line" ]] && server_list_ordered+=("$line")
+    done <<< "$sorted"
 }
 
 # Fonction pour afficher la bannière
@@ -74,66 +513,176 @@ banner() {
     printf "+%${width}s+\n" | tr " " "-"
 }
 
-# Fonction pour lister les serveurs
-list_servers() {
-    printf "| %-5s | %-15s | %-15s | %-5s | %-15s | %-15s |\n" "Index" "Description" "Host/IP" "Port" "Username" "Pass|SecKFile"
-    printf "|%s|%s|%s|%s|%s|%s|\n" "$(printf '%.7s' ========)" "$(printf '%.17s' ==================)" "$(printf '%.17s' ==================)" "$(printf '%.7s' ========)" "$(printf '%.17s' ==================)" "$(printf '%.17s' ==================)"
-    for ((i=0; i<${#server_list_ordered[@]}; i++)); do
-        IFS=' ' read -ra server <<< "${server_list_ordered[$i]}"
-        printf "| ${Red}%-5s${ResetColor} | ${Green}%-15s${ResetColor} | %-15s | %-5s | %-15s | %-15s |\n" "$i" "${server[1]}" "${server[2]}" "${server[3]}" "${server[4]}" "${server[5]}"
-    done
-    printf "|%s|%s|%s|%s|%s|%s|\n" "$(printf '%.7s' ========)" "$(printf '%.17s' ==================)" "$(printf '%.17s' ==================)" "$(printf '%.7s' ========)" "$(printf '%.17s' ==================)" "$(printf '%.17s' ==================)"
+format_auth_type() {
+    case "$1" in
+        "$AUTH_TYPE_KEY_FILE")
+            printf "key"
+            ;;
+        *)
+            printf "password"
+            ;;
+    esac
 }
 
-# Fonction pour se connecter à un serveur
+# Fonction pour lister les serveurs
+list_servers() {
+    printf "| %-5s | %-15s | %-15s | %-5s | %-15s | %-10s |\n" "Index" "Description" "Host/IP" "Port" "Username" "Auth"
+    printf "|%s|%s|%s|%s|%s|%s|\n" "$(printf '%.7s' ========)" "$(printf '%.17s' ==================)" "$(printf '%.17s' ==================)" "$(printf '%.7s' ========)" "$(printf '%.17s' ==================)" "$(printf '%.12s' ============)"
+    for ((i=0; i<${#server_list_ordered[@]}; i++)); do
+        IFS=' ' read -ra server <<< "${server_list_ordered[$i]}"
+        printf "| ${Red}%-5s${ResetColor} | ${Green}%-15s${ResetColor} | %-15s | %-5s | %-15s | %-10s |\n" "$i" "${server[1]}" "${server[2]}" "${server[3]}" "${server[4]}" "$(format_auth_type "${server[5]}")"
+    done
+    printf "|%s|%s|%s|%s|%s|%s|\n" "$(printf '%.7s' ========)" "$(printf '%.17s' ==================)" "$(printf '%.17s' ==================)" "$(printf '%.7s' ========)" "$(printf '%.17s' ==================)" "$(printf '%.12s' ============)"
+}
+
+# Fonction pour se connecter à un serveur (mot de passe passé via variable d'environnement)
 login_server() {
     local server_index="$1"
     IFS=' ' read -ra server <<< "${server_list_ordered[$server_index]}"
-    local password
-    password=$(decrypt_password "${server[5]}")
-    
-    banner "${Cyan}$USER${ResetColor} ${Green}se connecte${ResetColor} au serveur ${Yellow}【${server[1]}】${ResetColor}"
-    
-    expect -c "
-        spawn ssh -p ${server[3]} ${server[4]}@${server[2]}
-        expect {
-            \"*assword\" { send \"$password\r\"; exp_continue }
-            \"*passphrase\" { send \"$password\r\"; exp_continue }
-            \"yes/no\" { send \"yes\r\"; exp_continue }
-            \"Last*\" { send_user \"\nConnexion réussie à 【${server[1]}】\n\" }
-        }
-        interact
-    "
-    
-    banner "${Cyan}$USER${ResetColor} ${Red}s'est déconnecté${ResetColor} du serveur ${Yellow}【${server[1]}】${ResetColor}"
+    local server_name="${server[1]}"
+    local server_host="${server[2]}"
+    local server_port="${server[3]}"
+    local server_user="${server[4]}"
+    local auth_type="${server[5]}"
+    local secret_value
+    local connection_status=0
+
+    secret_value=$(decrypt_secret "${server[6]}")
+
+    if [[ -z "$secret_value" ]]; then
+        printf "${Red}❌ Impossible de déchiffrer le secret d'authentification.${ResetColor}\n"
+        return 1
+    fi
+
+    banner "${Cyan}$USER${ResetColor} ${Green}se connecte${ResetColor} au serveur ${Yellow}【${server_name}】${ResetColor}"
+
+    if [[ "$auth_type" == "$AUTH_TYPE_KEY_FILE" ]]; then
+        local identity_file
+        identity_file=$(expand_user_path "$secret_value")
+
+        if ! validate_key_path "$identity_file"; then
+            return 1
+        fi
+
+        ssh -i "$identity_file" -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -p "$server_port" "${server_user}@${server_host}" || connection_status=$?
+    else
+        # Passer le mot de passe via variable d'environnement (plus sécurisé que via argument)
+        # Le mot de passe n'apparaîtra pas dans 'ps' ou l'historique
+        SSHA_PASS="$secret_value" expect -c '
+            set timeout 15
+            set password $env(SSHA_PASS)
+            set port [lindex $argv 0]
+            set username [lindex $argv 1]
+            set host [lindex $argv 2]
+            set server_name [lindex $argv 3]
+            spawn ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 -p $port $username@$host
+            expect {
+                "*assword:" { send "$password\r"; interact }
+                "Permission denied" { send_user "\nAuthentification échouée pour 【$server_name】\n"; exit 1 }
+                timeout { send_user "\nTimeout de connexion\n"; exit 1 }
+                eof { send_user "\nConnexion terminée\n" }
+            }
+        ' "$server_port" "$server_user" "$server_host" "$server_name" || connection_status=$?
+
+        # Effacer la variable d'environnement
+        unset SSHA_PASS
+    fi
+
+    banner "${Cyan}$USER${ResetColor} ${Red}s'est déconnecté${ResetColor} du serveur ${Yellow}【${server_name}】${ResetColor}"
+    return "$connection_status"
 }
 
-# Fonction pour créer un nouveau serveur
+# Fonction pour créer un nouveau serveur avec validation
 create_server() {
     printf "\n${Cyan}Création d'un nouveau serveur :${ResetColor}\n"
-    read -rp "Description du serveur : " name
-    read -rp "Nom d'hôte ou IP : " host
-    read -rp "Port : " port
-    read -rp "Nom d'utilisateur : " user
-    read -rsp "Mot de passe ou chemin de la clé : " pass
-    printf "\n"
-    
-    local encrypted_pass
-    encrypted_pass=$(encrypt_password "$name" "$pass")
-    
+
+    # Saisie et validation du nom
+    local name
+    while true; do
+        read -rp "Description du serveur (sans espaces) : " name
+        validate_server_name "$name" && break
+    done
+
+    # Saisie et validation de l'hôte
+    local host
+    while true; do
+        read -rp "Nom d'hôte ou IP : " host
+        validate_host "$host" && break
+    done
+
+    # Saisie et validation du port (défaut: 22)
+    local port
+    while true; do
+        read -rp "Port [22] : " port
+        port="${port:-22}"
+        validate_port "$port" && break
+    done
+
+    # Saisie et validation du nom d'utilisateur
+    local user
+    while true; do
+        read -rp "Nom d'utilisateur : " user
+        validate_username "$user" && break
+    done
+
+    local auth_choice
+    local auth_type="$AUTH_TYPE_PASSWORD"
+    while true; do
+        read -rp "Type d'authentification [password/key] (p/k) [p] : " auth_choice
+        auth_choice="${auth_choice:-p}"
+
+        case "$auth_choice" in
+            p|P|password)
+                auth_type="$AUTH_TYPE_PASSWORD"
+                break
+                ;;
+            k|K|key|cle|clé)
+                auth_type="$AUTH_TYPE_KEY_FILE"
+                break
+                ;;
+            *)
+                printf "${Red}❌ Réponse invalide. Entrez 'p' pour mot de passe ou 'k' pour clé privée.${ResetColor}\n"
+                ;;
+        esac
+    done
+
+    local secret_value
+    while true; do
+        if [[ "$auth_type" == "$AUTH_TYPE_KEY_FILE" ]]; then
+            read -rp "Chemin de la clé privée : " secret_value
+            secret_value=$(expand_user_path "$secret_value")
+            validate_key_path "$secret_value" && break
+        else
+            read -rsp "Mot de passe : " secret_value
+            printf "\n"
+            validate_password "$secret_value" && break
+        fi
+    done
+
+    local encrypted_secret
+    encrypted_secret=$(encrypt_secret "$name" "$secret_value" "$auth_type")
+
+    if [[ -z "$encrypted_secret" ]]; then
+        printf "${Red}❌ Erreur lors du chiffrement du secret d'authentification.${ResetColor}\n"
+        return 1
+    fi
+
     printf "\n${Cyan}Vérifiez les informations suivantes :${ResetColor}\n"
     printf "${Yellow}Nom du serveur :${ResetColor} %s\n" "$name"
     printf "${Yellow}Hôte ou IP :${ResetColor} %s\n" "$host"
     printf "${Yellow}Port :${ResetColor} %s\n" "$port"
     printf "${Yellow}Nom d'utilisateur :${ResetColor} %s\n" "$user"
-    printf "${Yellow}Mot de passe/Clé :${ResetColor} [caché]\n"
-    
+    printf "${Yellow}Type d'authentification :${ResetColor} %s\n" "$(format_auth_type "$auth_type")"
+    printf "${Yellow}Secret :${ResetColor} [caché]\n"
+
     read -rp "Les informations sont-elles correctes ? (O/N) " confirm
     if [[ $confirm =~ ^[oOyY] ]]; then
-        local index=${#server_list[@]}
-        create_config_file "$Config_Dir/${index}_${name}.conf" "Index=$index\nName=$name\nHost=$host\nPort=$port\nUser=$user\nPasswordOrKey=$encrypted_pass\n"
-        printf "${Green}Le serveur '$name' a été enregistré avec succès.${ResetColor}\n"
+        local index
+        index=$(next_server_index)
+        create_config_file "$Config_Dir/${index}_${name}.conf" "Index=$index\nName=$name\nHost=$host\nPort=$port\nUser=$user\nAuthType=$auth_type\nPasswordOrKey=$encrypted_secret\n"
+        printf "${Green}Le serveur '%s' a été enregistré avec succès.${ResetColor}\n" "$name"
         load_server_list
+        reorder_server_list
         list_servers
     else
         printf "${Yellow}Création du serveur annulée.${ResetColor}\n"
@@ -144,14 +693,36 @@ create_server() {
 delete_server() {
     list_servers
     read -rp "Quel serveur voulez-vous supprimer ? (Entrez le numéro) : " server_number
-    
+
     if ((server_number >= 0 && server_number < ${#server_list_ordered[@]})); then
         IFS=' ' read -ra server <<< "${server_list_ordered[$server_number]}"
-        read -rp "Voulez-vous vraiment supprimer le serveur ${server[1]} ? (O/N) : " confirm
+        local server_name="${server[1]}"
+        local server_original_index="${server[0]}"
+
+        read -rp "Voulez-vous vraiment supprimer le serveur ${server_name} ? (O/N) : " confirm
         if [[ $confirm =~ ^[oOyY] ]]; then
-            rm -f "$Config_Dir/${server_number}_${server[1]}".*
-            mkdir -p "$DeletedFolder"
-            printf "${Green}Le serveur ${server[1]} a été supprimé.${ResetColor}\n"
+            # Utiliser l'index original du serveur (pas l'index de la liste ordonnée)
+            local config_file
+            config_file=$(find "$Config_Dir" -maxdepth 1 -name "${server_original_index}_${server_name}.*" -type f 2>/dev/null | head -1)
+
+            if [[ -n "$config_file" && -f "$config_file" ]]; then
+                # Créer le dossier de sauvegarde et déplacer le fichier
+                mkdir -p "$DeletedFolder"
+                mv "$config_file" "$DeletedFolder/"
+
+                # Supprimer également le fichier de mot de passe associé
+                local base64_machine
+                base64_machine=$(echo -n "$server_name" | base64)
+                if [[ -f "$Config_Pass/.$base64_machine" ]]; then
+                    rm -f "$Config_Pass/.$base64_machine"
+                fi
+
+                printf "${Green}Le serveur ${server_name} a été supprimé.${ResetColor}\n"
+            else
+                printf "${Red}Fichier de configuration non trouvé pour ${server_name}.${ResetColor}\n"
+            fi
+
+            # Recharger la liste
             load_server_list
             reorder_server_list
         else
@@ -162,36 +733,445 @@ delete_server() {
     fi
 }
 
-# Fonction pour chiffrer le mot de passe
-encrypt_password() {
+# Fonction pour initialiser ou vérifier le mot de passe maître
+init_master_password() {
+    # Vérifier OpenSSL
+    check_openssl_capabilities || exit 1
+
+    if [[ -f "$Master_Key_File" ]]; then
+        # Vérifier le mot de passe maître existant
+        read -rsp "🔐 Entrez votre mot de passe maître : " master_pass
+        printf "\n"
+
+        # Lire le sel et le hash stockés
+        local stored_salt stored_hash stored_verifier stored_iterations
+        stored_salt=$(get_config_value "$Master_Key_File" "salt")
+        stored_hash=$(get_config_value "$Master_Key_File" "hash")
+        stored_verifier=$(get_config_value "$Master_Key_File" "verifier")
+        stored_iterations=$(get_config_value "$Master_Key_File" "iterations")
+
+        if [[ -z "$stored_salt" ]]; then
+            printf "${Red}❌ Fichier de mot de passe maître invalide ou corrompu.${ResetColor}\n"
+            exit 1
+        fi
+
+        if [[ -n "$stored_verifier" ]]; then
+            stored_iterations="${stored_iterations:-$DEFAULT_KDF_ITERATIONS}"
+            DERIVED_KEY=$(derive_key "$master_pass" "$stored_salt" "$stored_iterations")
+            DERIVED_AUTH_KEY=$(derive_auth_key "$DERIVED_KEY")
+
+            local check_verifier
+            check_verifier=$(compute_master_verifier)
+
+            if [[ "$check_verifier" != "$stored_verifier" ]]; then
+                printf "${Red}❌ Mot de passe maître incorrect.${ResetColor}\n"
+                exit 1
+            fi
+        elif [[ -n "$stored_hash" ]]; then
+            local check_hash
+            local legacy_iterations
+            check_hash=$(sha256_hex "${master_pass}${stored_salt}")
+
+            if [[ "$check_hash" != "$stored_hash" ]]; then
+                printf "${Red}❌ Mot de passe maître incorrect.${ResetColor}\n"
+                exit 1
+            fi
+
+            legacy_iterations=$(detect_legacy_iterations "$master_pass" "$stored_salt")
+            DERIVED_KEY=$(derive_key "$master_pass" "$stored_salt" "$legacy_iterations")
+            DERIVED_AUTH_KEY=$(derive_auth_key "$DERIVED_KEY")
+            persist_master_key_file "$stored_salt" "$legacy_iterations"
+            printf "${Green}✅ Format du mot de passe maître mis à jour.${ResetColor}\n"
+        else
+            printf "${Red}❌ Fichier de mot de passe maître invalide ou corrompu.${ResetColor}\n"
+            exit 1
+        fi
+
+        if [[ -z "$DERIVED_KEY" ]]; then
+            printf "${Red}❌ Erreur lors de la dérivation de la clé.${ResetColor}\n"
+            exit 1
+        fi
+
+        printf "${Green}✅ Mot de passe maître vérifié.${ResetColor}\n"
+    else
+        # Créer un nouveau mot de passe maître
+        printf "${Cyan}🔐 Configuration du mot de passe maître${ResetColor}\n"
+        printf "${Yellow}Ce mot de passe protégera tous vos identifiants SSH.${ResetColor}\n"
+        printf "${Yellow}⚠️  Il ne peut pas être récupéré si vous l'oubliez !${ResetColor}\n\n"
+
+        local master_pass master_pass_confirm
+        read -rsp "Créez votre mot de passe maître : " master_pass
+        printf "\n"
+        read -rsp "Confirmez le mot de passe maître : " master_pass_confirm
+        printf "\n"
+
+        if [[ "$master_pass" != "$master_pass_confirm" ]]; then
+            printf "${Red}❌ Les mots de passe ne correspondent pas.${ResetColor}\n"
+            exit 1
+        fi
+
+        if [[ ${#master_pass} -lt 12 ]]; then
+            printf "${Red}❌ Le mot de passe doit contenir au moins 12 caractères.${ResetColor}\n"
+            exit 1
+        fi
+
+        # Générer un sel aléatoire
+        local salt
+        salt=$(openssl rand -hex 16)
+
+        # Dériver la clé avec la fonction compatible multi-versions
+        DERIVED_KEY=$(derive_key "$master_pass" "$salt" "$DEFAULT_KDF_ITERATIONS")
+        DERIVED_AUTH_KEY=$(derive_auth_key "$DERIVED_KEY")
+
+        if [[ -z "$DERIVED_KEY" ]]; then
+            printf "${Red}❌ Erreur lors de la dérivation de la clé.${ResetColor}\n"
+            exit 1
+        fi
+
+        ensure_secure_directory "$(dirname "$Master_Key_File")" 700
+        persist_master_key_file "$salt" "$DEFAULT_KDF_ITERATIONS"
+
+        printf "${Green}✅ Mot de passe maître configuré avec succès.${ResetColor}\n\n"
+    fi
+}
+
+# Fonction pour créer une sauvegarde
+backup_config() {
+    local backup_name="$1"
+    local timestamp
+    timestamp=$(date +%Y%m%d_%H%M%S)
+
+    if [[ -z "$backup_name" ]]; then
+        backup_name="backup_${timestamp}"
+    elif ! validate_backup_name "$backup_name"; then
+        return 1
+    fi
+
+    ensure_secure_directory "$Config_Dir" 700
+    ensure_secure_directory "$Backup_Dir" 700
+
+    local backup_file="$Backup_Dir/${backup_name}.tar.gz"
+
+    printf "${Blue}📦 Création de la sauvegarde...${ResetColor}\n"
+
+    # Créer une archive des configurations (sans le dossier de sauvegardes)
+    if tar -czf "$backup_file" --exclude="./.backups" -C "$Config_Dir" . 2>/dev/null; then
+        chmod 600 "$backup_file"
+        printf "${Green}✅ Sauvegarde créée : %s${ResetColor}\n" "$backup_file"
+        printf "${Yellow}⚠️  Cette sauvegarde contient des données chiffrées.${ResetColor}\n"
+        printf "${Yellow}   Vous aurez besoin du même mot de passe maître pour la restaurer.${ResetColor}\n"
+    else
+        printf "${Red}❌ Erreur lors de la création de la sauvegarde.${ResetColor}\n"
+        return 1
+    fi
+}
+
+# Fonction pour restaurer une sauvegarde
+restore_config() {
+    local backup_file="$1"
+    local restore_tmp
+
+    if [[ -z "$backup_file" ]]; then
+        # Lister les sauvegardes disponibles
+        printf "${Cyan}📦 Sauvegardes disponibles :${ResetColor}\n"
+        if [[ -d "$Backup_Dir" ]]; then
+            local i=0
+            declare -a backups
+            for f in "$Backup_Dir"/*.tar.gz; do
+                if [[ -f "$f" ]]; then
+                    backups+=("$f")
+                    printf "  ${Green}[%d]${ResetColor} %s\n" "$i" "$(basename "$f")"
+                    ((i++))
+                fi
+            done
+
+            if [[ $i -eq 0 ]]; then
+                printf "${Yellow}Aucune sauvegarde trouvée.${ResetColor}\n"
+                return 1
+            fi
+
+            read -rp "Choisissez une sauvegarde (numéro) : " choice
+            if [[ "$choice" =~ ^[0-9]+$ ]] && ((choice >= 0 && choice < i)); then
+                backup_file="${backups[$choice]}"
+            else
+                printf "${Red}❌ Choix invalide.${ResetColor}\n"
+                return 1
+            fi
+        else
+            printf "${Yellow}Aucune sauvegarde trouvée.${ResetColor}\n"
+            return 1
+        fi
+    fi
+
+    if [[ ! -f "$backup_file" ]]; then
+        printf "${Red}❌ Fichier de sauvegarde non trouvé : %s${ResetColor}\n" "$backup_file"
+        return 1
+    fi
+
+    if ! validate_restore_archive "$backup_file"; then
+        return 1
+    fi
+
+    printf "${Yellow}⚠️  Cette opération va remplacer votre configuration actuelle.${ResetColor}\n"
+    read -rp "Voulez-vous continuer ? (O/N) : " confirm
+
+    if [[ $confirm =~ ^[oOyY] ]]; then
+        # Créer une sauvegarde de la config actuelle avant restauration
+        printf "${Blue}📦 Sauvegarde de la configuration actuelle...${ResetColor}\n"
+        if ! backup_config "pre_restore_$(date +%Y%m%d_%H%M%S)"; then
+            printf "${Red}❌ Restauration annulée: impossible de sauvegarder l'état courant.${ResetColor}\n"
+            return 1
+        fi
+
+        printf "${Blue}📦 Restauration en cours...${ResetColor}\n"
+        restore_tmp=$(mktemp -d)
+        if tar -xzf "$backup_file" -C "$restore_tmp" 2>/dev/null; then
+            if find "$restore_tmp" -type l -print -quit | grep -q .; then
+                rm -rf "$restore_tmp"
+                printf "${Red}❌ Archive invalide: les liens symboliques ne sont pas autorisés.${ResetColor}\n"
+                return 1
+            fi
+
+            # Nettoyer la configuration actuelle (en conservant les sauvegardes)
+            find "$Config_Dir" -mindepth 1 -maxdepth 1 ! -name ".backups" -exec rm -rf {} +
+            # Restaurer le contenu sauvegardé (sans écraser le dossier des sauvegardes)
+            find "$restore_tmp" -mindepth 1 -maxdepth 1 ! -name ".backups" -exec cp -a {} "$Config_Dir"/ \;
+            rm -rf "$restore_tmp"
+            chmod 700 "$Config_Dir"
+            [[ -d "$Config_Pass" ]] && chmod 700 "$Config_Pass"
+            [[ -d "$DeletedFolder" ]] && chmod 700 "$DeletedFolder"
+            [[ -f "$Master_Key_File" ]] && chmod 600 "$Master_Key_File"
+            find "$Config_Dir" -maxdepth 1 -type f \( -name "*.conf" -o -name "*.ini" \) -exec chmod 600 {} +
+            printf "${Green}✅ Restauration terminée.${ResetColor}\n"
+            printf "${Yellow}⚠️  Rechargez ssha pour voir les changements.${ResetColor}\n"
+        else
+            rm -rf "$restore_tmp"
+            printf "${Red}❌ Erreur lors de la restauration.${ResetColor}\n"
+            return 1
+        fi
+    else
+        printf "${Yellow}Restauration annulée.${ResetColor}\n"
+    fi
+}
+
+# Fonction pour lister les sauvegardes
+list_backups() {
+    printf "${Cyan}📦 Sauvegardes disponibles :${ResetColor}\n"
+    if [[ -d "$Backup_Dir" ]]; then
+        local found=false
+        for f in "$Backup_Dir"/*.tar.gz; do
+            if [[ -f "$f" ]]; then
+                found=true
+                local size
+                size=$(du -h "$f" | cut -f1)
+                local date
+                date=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M" "$f" 2>/dev/null || stat -c "%y" "$f" 2>/dev/null | cut -d' ' -f1-2)
+                printf "  ${Green}•${ResetColor} %-30s ${Yellow}%s${ResetColor} ${Blue}%s${ResetColor}\n" "$(basename "$f")" "$size" "$date"
+            fi
+        done
+        if [[ "$found" == false ]]; then
+            printf "${Yellow}  Aucune sauvegarde trouvée.${ResetColor}\n"
+        fi
+    else
+        printf "${Yellow}  Aucune sauvegarde trouvée.${ResetColor}\n"
+    fi
+}
+
+# Fonction de migration des anciens mots de passe
+migrate_old_passwords() {
+    printf "${Cyan}🔄 Migration des mots de passe vers le nouveau système${ResetColor}\n\n"
+
+    # Vérifier s'il y a des anciens fichiers de mots de passe (format v1)
+    local old_files=()
+    local insecure_files=()
+    if [[ -d "$Config_Pass" ]]; then
+        while IFS= read -r -d '' file; do
+            # Vérifier si c'est l'ancien format (contient 'key=' au lieu de 'iv=')
+            if grep -q "^key=" "$file" 2>/dev/null; then
+                old_files+=("$file")
+            elif ! grep -q "^mac=" "$file" 2>/dev/null || ! grep -q "^auth_type=" "$file" 2>/dev/null; then
+                insecure_files+=("$file")
+            fi
+        done < <(find "$Config_Pass" -name ".*" -type f -print0 2>/dev/null)
+    fi
+
+    if [[ ${#old_files[@]} -eq 0 && ${#insecure_files[@]} -eq 0 ]]; then
+        printf "${Yellow}Aucun ancien mot de passe à migrer.${ResetColor}\n"
+        printf "${Green}Tous vos mots de passe utilisent déjà le nouveau format.${ResetColor}\n"
+        return 0
+    fi
+
+    if [[ ${#old_files[@]} -gt 0 ]]; then
+        printf "${Yellow}Trouvé %d secret(s) dans l'ancien format v1.${ResetColor}\n" "${#old_files[@]}"
+    fi
+    if [[ ${#insecure_files[@]} -gt 0 ]]; then
+        printf "${Yellow}Trouvé %d secret(s) à re-signer au format durci.${ResetColor}\n" "${#insecure_files[@]}"
+    fi
+    printf "${Yellow}⚠️  Pour migrer, vous devez connaître les mots de passe maîtres déjà configurés.${ResetColor}\n\n"
+
+    read -rp "Voulez-vous continuer la migration ? (O/N) : " confirm
+    if [[ ! $confirm =~ ^[oOyY] ]]; then
+        printf "${Yellow}Migration annulée.${ResetColor}\n"
+        return 0
+    fi
+
+    local migrated=0
+    local upgraded=0
+    local failed=0
+
+    for old_file in "${old_files[@]}"; do
+        local machine_name
+        machine_name=$(get_config_value "$old_file" "machine")
+        local decoded_name
+        decoded_name=$(decode_base64 "$machine_name")
+
+        printf "\n${Blue}Migration de : %s${ResetColor}\n" "$decoded_name"
+
+        # Lire l'ancien format
+        local old_encrypted old_salt old_key
+        old_encrypted=$(get_config_value "$old_file" "encrypted")
+        old_salt=$(get_config_value "$old_file" "salt")
+        old_key=$(get_config_value "$old_file" "key")
+
+        # Déchiffrer avec l'ancien système
+        local decrypted_pass
+        decrypted_pass=$(echo -n "$old_encrypted" | openssl aes-256-ctr -md sha512 -d -a -A -S "$old_salt" -k "$old_key" 2>/dev/null)
+
+        if [[ -n "$decrypted_pass" ]]; then
+            # Rechiffrer avec le nouveau système
+            local new_encrypted
+            new_encrypted=$(encrypt_secret "$decoded_name" "$decrypted_pass" "$AUTH_TYPE_PASSWORD")
+
+            if [[ -n "$new_encrypted" ]]; then
+                printf "${Green}  ✅ Migré avec succès${ResetColor}\n"
+                ((migrated++))
+            else
+                printf "${Red}  ❌ Échec du rechiffrement${ResetColor}\n"
+                ((failed++))
+            fi
+        else
+            printf "${Red}  ❌ Échec du déchiffrement (ancien format corrompu ?)${ResetColor}\n"
+            ((failed++))
+        fi
+    done
+
+    for insecure_file in "${insecure_files[@]}"; do
+        local machine_name
+        machine_name=$(get_config_value "$insecure_file" "machine")
+        local decoded_name
+        decoded_name=$(decode_base64 "$machine_name")
+
+        local auth_type
+        auth_type=$(get_config_value "$insecure_file" "auth_type")
+        auth_type="${auth_type:-$AUTH_TYPE_PASSWORD}"
+
+        local decrypted_secret
+        decrypted_secret=$(decrypt_secret "$machine_name")
+
+        if [[ -z "$decrypted_secret" ]]; then
+            printf "${Red}  ❌ Échec de la remise à niveau de %s${ResetColor}\n" "${decoded_name:-$machine_name}"
+            ((failed++))
+            continue
+        fi
+
+        if encrypt_secret "${decoded_name:-$machine_name}" "$decrypted_secret" "$auth_type" >/dev/null; then
+            printf "${Green}  ✅ Secret re-signé : %s${ResetColor}\n" "${decoded_name:-$machine_name}"
+            ((upgraded++))
+        else
+            printf "${Red}  ❌ Échec de la re-signature de %s${ResetColor}\n" "${decoded_name:-$machine_name}"
+            ((failed++))
+        fi
+    done
+
+    printf "\n${Cyan}=== Résumé de la migration ===${ResetColor}\n"
+    printf "${Green}Migrés depuis v1 : %d${ResetColor}\n" "$migrated"
+    printf "${Green}Secrets remis au format durci : %d${ResetColor}\n" "$upgraded"
+    if [[ $failed -gt 0 ]]; then
+        printf "${Red}Échecs : %d${ResetColor}\n" "$failed"
+    fi
+}
+
+# Fonction pour chiffrer un secret d'authentification avec authentification HMAC
+encrypt_secret() {
     local machine_name="$1"
-    local password="$2"
-    local salt
-    salt=$(openssl rand -hex 8)
-    local key
-    key=$(openssl rand -hex 12)
+    local secret_value="$2"
+    local auth_type="${3:-$AUTH_TYPE_PASSWORD}"
+
+    # Vérifier que la clé dérivée existe
+    if [[ -z "$DERIVED_KEY" || -z "$DERIVED_AUTH_KEY" ]]; then
+        printf "${Red}❌ Erreur: clé maître non initialisée.${ResetColor}\n" >&2
+        return 1
+    fi
+
+    # Générer un IV unique pour chaque mot de passe
+    local iv
+    iv=$(openssl rand -hex 16)
+
+    # Chiffrer avec AES-256-CBC et la clé dérivée
     local encrypted
-    encrypted=$(echo -n "$password" | openssl aes-256-ctr -md sha512 -a -A -S "$salt" -k "$key" 2>/dev/null)
+    encrypted=$(echo -n "$secret_value" | openssl enc -aes-256-cbc -a -A -K "$DERIVED_KEY" -iv "$iv" 2>/dev/null)
+
+    if [[ -z "$encrypted" ]]; then
+        return 1
+    fi
+
     local base64_machine
-    base64_machine=$(echo -n "$machine_name" | base64)
-    
-    mkdir -p "$Config_Pass"
-    chmod 700 "$Config_Pass"
-    
-    create_config_file "$Config_Pass/.$base64_machine" "machine=$base64_machine\nencrypted=$encrypted\nsalt=$salt\nkey=$key\n"
-    
+    base64_machine=$(encode_base64 "$machine_name")
+    local mac
+    mac=$(compute_secret_mac "$base64_machine" "$auth_type" "$iv" "$encrypted")
+
+    if [[ -z "$mac" ]]; then
+        return 1
+    fi
+
+    ensure_secure_directory "$Config_Pass" 700
+
+    # Stocker uniquement l'IV et le texte chiffré (la clé reste en mémoire)
+    create_config_file "$Config_Pass/.$base64_machine" "machine=$base64_machine\nauth_type=$auth_type\nencrypted=$encrypted\niv=$iv\nmac=$mac\n"
+
     echo "$base64_machine"
 }
 
-# Fonction pour déchiffrer le mot de passe
-decrypt_password() {
+# Fonction pour déchiffrer un secret d'authentification
+decrypt_secret() {
     local encoded_machine_name="$1"
     local config_file="$Config_Pass/.$encoded_machine_name"
-    
+
+    # Vérifier que la clé dérivée existe
+    if [[ -z "$DERIVED_KEY" || -z "$DERIVED_AUTH_KEY" ]]; then
+        printf "${Red}❌ Erreur: clé maître non initialisée.${ResetColor}\n" >&2
+        return 1
+    fi
+
     if [[ -f $config_file ]]; then
-        local encrypted salt key
-        . "$config_file"
-        echo -n "$encrypted" | openssl aes-256-ctr -md sha512 -d -a -A -S "$salt" -k "$key" 2>/dev/null
+        local encrypted iv auth_type mac
+        encrypted=$(get_config_value "$config_file" "encrypted")
+        iv=$(get_config_value "$config_file" "iv")
+        auth_type=$(get_config_value "$config_file" "auth_type")
+        mac=$(get_config_value "$config_file" "mac")
+        auth_type="${auth_type:-$AUTH_TYPE_PASSWORD}"
+
+        if [[ -z "$encrypted" || -z "$iv" ]]; then
+            printf "${Red}❌ Fichier de mot de passe invalide pour %s${ResetColor}\n" "$encoded_machine_name" >&2
+            return 1
+        fi
+
+        if [[ "$auth_type" != "$AUTH_TYPE_PASSWORD" && "$auth_type" != "$AUTH_TYPE_KEY_FILE" ]]; then
+            printf "${Red}❌ Type d'authentification invalide pour %s${ResetColor}\n" "$encoded_machine_name" >&2
+            return 1
+        fi
+
+        if [[ -n "$mac" ]]; then
+            local expected_mac
+            expected_mac=$(compute_secret_mac "$encoded_machine_name" "$auth_type" "$iv" "$encrypted")
+            if [[ "$expected_mac" != "$mac" ]]; then
+                printf "${Red}❌ Intégrité du secret compromise pour %s${ResetColor}\n" "$encoded_machine_name" >&2
+                return 1
+            fi
+        fi
+
+        # Déchiffrer avec la clé dérivée
+        echo -n "$encrypted" | openssl enc -aes-256-cbc -d -a -A -K "$DERIVED_KEY" -iv "$iv" 2>/dev/null
     else
         printf "${Red}Fichier de configuration non trouvé pour $encoded_machine_name${ResetColor}\n" >&2
         return 1
@@ -200,36 +1180,81 @@ decrypt_password() {
 
 # Fonction principale
 main() {
-    load_server_list
-    reorder_server_list
-
     case "$1" in
         -h|--help)
-            printf "Usage: ssha [-h] [-l] [-c] [-d] [-s <numéro de serveur>]\n"
-            printf "  -h, --help     Affiche cette aide\n"
-            printf "  -l, --list     Liste les serveurs\n"
-            printf "  -c, --create   Crée un nouveau serveur\n"
-            printf "  -d, --delete   Supprime un serveur\n"
-            printf "  -s <numéro>    Se connecte au serveur spécifié\n"
+            show_version
+            printf "\n"
+            printf "Usage: ssha [OPTIONS]\n\n"
+            printf "${Cyan}Options de connexion :${ResetColor}\n"
+            printf "  -l, --list          Liste les serveurs enregistrés\n"
+            printf "  -s <numéro>         Se connecte au serveur spécifié\n"
+            printf "  -c, --create        Crée un nouveau serveur\n"
+            printf "  -d, --delete        Supprime un serveur\n"
+            printf "\n${Cyan}Options de gestion :${ResetColor}\n"
+            printf "  -b, --backup [nom]  Crée une sauvegarde de la configuration\n"
+            printf "  -r, --restore [f]   Restaure une sauvegarde\n"
+            printf "  --list-backups      Liste les sauvegardes disponibles\n"
+            printf "  -m, --migrate       Migre les anciens secrets vers le format durci\n"
+            printf "\n${Cyan}Autres options :${ResetColor}\n"
+            printf "  -v, --version       Affiche la version\n"
+            printf "  -h, --help          Affiche cette aide\n"
+            printf "\n${Cyan}Exemples :${ResetColor}\n"
+            printf "  ssha -l             # Lister tous les serveurs\n"
+            printf "  ssha -s 0           # Se connecter au serveur 0\n"
+            printf "  ssha -c             # Ajouter un nouveau serveur\n"
+            printf "  ssha -b weekly      # Créer une sauvegarde 'weekly'\n"
             ;;
-        -l|--list)
-            list_servers
+        -v|--version)
+            show_version
             ;;
-        -c|--create)
-            create_server
-            ;;
-        -d|--delete)
-            delete_server
-            ;;
-        -s)
-            if [[ -n $2 && $2 =~ ^[0-9]+$ ]]; then
-                login_server "$2"
-            else
-                printf "${Red}Veuillez spécifier un numéro de serveur valide.${ResetColor}\n"
-            fi
+        "")
+            # Aucun argument : afficher aide courte
+            show_version
+            printf "\nUtilisez 'ssha -h' pour voir l'aide complète.\n"
+            printf "Utilisez 'ssha -l' pour lister les serveurs.\n"
             ;;
         *)
-            printf "${Red}Option non reconnue. Utilisez -h pour l'aide.${ResetColor}\n"
+            load_server_list
+            reorder_server_list
+            case "$1" in
+                -l|--list)
+                    list_servers
+                    ;;
+                -c|--create)
+                    init_master_password
+                    create_server
+                    ;;
+                -d|--delete)
+                    delete_server
+                    ;;
+                -s)
+                    if [[ -n $2 && $2 =~ ^[0-9]+$ ]]; then
+                        init_master_password
+                        login_server "$2"
+                    else
+                        printf "${Red}❌ Veuillez spécifier un numéro de serveur valide.${ResetColor}\n"
+                        printf "Usage: ssha -s <numéro>\n"
+                        printf "Utilisez 'ssha -l' pour voir la liste des serveurs.\n"
+                    fi
+                    ;;
+                -b|--backup)
+                    backup_config "$2"
+                    ;;
+                -r|--restore)
+                    restore_config "$2"
+                    ;;
+                --list-backups)
+                    list_backups
+                    ;;
+                -m|--migrate)
+                    init_master_password
+                    migrate_old_passwords
+                    ;;
+                *)
+                    printf "${Red}❌ Option non reconnue : %s${ResetColor}\n" "$1"
+                    printf "Utilisez 'ssha -h' pour voir l'aide.\n"
+                    ;;
+            esac
             ;;
     esac
 }
